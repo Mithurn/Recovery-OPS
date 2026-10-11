@@ -1,0 +1,21 @@
+Recovery OPS includes code adapted from the projects below. Their notices are reproduced as the licenses require.
+
+Munder Difflin (MIT)
+Copyright (c) 2026 Chaitanya Giri
+https://github.com/chaitanyagiri/munder-difflin
+Used for: the pixel floor engine (character sprites and walking, thought bubbles, message envelopes, camera, pathfinding). The office, tiles and characters in this project are drawn in code and do not use that project's art assets.
+
+The Office engine by shahar061 (ISC), via Munder Difflin
+Copyright (c) 2026 shahar061
+https://github.com/shahar061/the-office
+Used for: the original character, camera and pathfinding designs that Munder Difflin adapted.
+
+beautifului.dev components (MIT)
+Copyright (c) 2026 Shane Levine
+https://www.beautifului.dev
+Used for: the pixel grid loader, shimmer text, trace, tool chip, task row and approval card patterns, re-implemented in plain CSS.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of the MIT licensed software above and associated documentation files, to deal in it without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies, subject to the condition that the copyright notice and this permission notice are included in all copies or substantial portions of it. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+ISC License (shahar061)
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES.

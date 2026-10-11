@@ -16,8 +16,3 @@ test-results/
 *.png
 .env.bak-session
 
-# local-only working files
-/PROJECT_REVIEW.md
-/TODO.md
-bench/.cache/pre-corpus-v2-backup/
-

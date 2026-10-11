@@ -22,8 +22,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type-check
+      - name: Type-check server
         run: npx tsc --noEmit
+
+      - name: Type-check web
+        run: npx tsc --noEmit -p web/tsconfig.json
+
+      - name: Build web
+        run: npm run web:build
 
       - name: Run unit tests
         # test:unit excludes *.integration.test.ts — no Postgres, Redis, or model API needed.
