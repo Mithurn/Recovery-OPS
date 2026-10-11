@@ -186,12 +186,6 @@ export function Landing() {
           </div>
           <div className="lp-footer__bottom">
             <span>© 2026 Recovery OPS</span>
-            <span>
-              Pixel engine adapted from{" "}
-              <a href="https://github.com/chaitanyagiri/munder-difflin" target="_blank" rel="noreferrer">
-                Munder Difflin
-              </a>
-            </span>
           </div>
         </footer>
       </div>
