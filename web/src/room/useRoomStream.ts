@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { metrics as fetchMetrics, streamRoom } from "../api.js";
 import type { RoomMetrics } from "../types.js";
 import { runReconnectingStream } from "../loop/reconnectingStream.js";
+import { RoomBus } from "./roomBus.js";
 
 // Drives the top bar and the case lanes from the canonical room-wide event stream, the same
 // PublishingEventLog fan-out every durable backend event already passes through — never a
@@ -16,6 +17,7 @@ export type RoomLiveState = {
   // Bumps on every durable event across every case — callers refetch case lists off this rather
   // than waiting on a poll interval.
   version: number;
+  bus: RoomBus;
 };
 
 const RECONNECT_BASE_MS = 1000;
@@ -26,6 +28,7 @@ export function useRoomStream(): RoomLiveState {
   const [metrics, setMetrics] = useState<RoomMetrics | null>(null);
   const [connected, setConnected] = useState(false);
   const [version, setVersion] = useState(0);
+  const bus = useMemo(() => new RoomBus(), []);
   const debounceRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -50,6 +53,7 @@ export function useRoomStream(): RoomLiveState {
           void _type;
           setMetrics(snapshot);
         } else if (ev.type === "audit") {
+          bus.emit({ eventType: ev.eventType, payload: ev.payload, caseId: ev.caseId, at: ev.at });
           setVersion((n) => n + 1);
           refreshMetrics();
         }
@@ -67,7 +71,7 @@ export function useRoomStream(): RoomLiveState {
       controller.abort();
       window.clearTimeout(debounceRef.current);
     };
-  }, []);
+  }, [bus]);
 
-  return { metrics, connected, version };
+  return { metrics, connected, version, bus };
 }

@@ -39,53 +39,54 @@ export function AttemptTimeline({ attempts }: { attempts: Attempt[] }) {
   const rows = [...attempts].sort((a, b) => a.attemptNo - b.attemptNo);
 
   return (
-    <div className="tl">
-      <div className="tl__head">
-        Attempts — each one runs exactly once, tagged with a unique idempotency key so a retry can
-        never double-charge
-      </div>
-      {rows.map((a) => (
-        <AttemptRow key={a.id} attempt={a} />
-      ))}
-    </div>
+    <section className="attempts" aria-label="Attempts">
+      <h4 className="attempts__head" title="Each attempt runs exactly once under a unique idempotency key, so a retry can never double charge.">
+        Attempts
+      </h4>
+      <ul className="attempts__list">
+        {rows.map((a) => (
+          <AttemptRow key={a.id} attempt={a} />
+        ))}
+      </ul>
+    </section>
   );
 }
 
 function AttemptRow({ attempt: a }: { attempt: Attempt }) {
   const [open, setOpen] = useState(false);
   const Chevron = open ? ChevronDown : ChevronRight;
+  const action = ACTION_LABEL[a.action] ?? a.action.replace(/_/g, " ").toLowerCase();
   return (
-    <div className="tl__row">
-      <button className="tl__line" onClick={() => setOpen((v) => !v)}>
-        <span className="tl__no">#{a.attemptNo}</span>
-        <span className="tl__action">{ACTION_LABEL[a.action] ?? a.action.replace(/_/g, " ").toLowerCase()}</span>
-        <span className={"tl__status " + (STATUS_CLASS[a.status] ?? "tl__status--muted")}>
-          {STATUS_LABEL[a.status] ?? a.status}
+    <li className="attempt">
+      <button className="attempt__line" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="attempt__no tnum">{a.attemptNo}</span>
+        <span className="attempt__main">
+          <span className="attempt__action">{action.charAt(0).toUpperCase() + action.slice(1)}</span>
+          {a.recoveredPaise > 0 && <span className="attempt__sub tnum">{rupees(a.recoveredPaise)} captured</span>}
         </span>
-        {a.attemptNo > 1 && <span className="tl__badge">re-plan {a.attemptNo - 1}</span>}
-        {a.recoveredPaise > 0 && <span className="tl__captured">{rupees(a.recoveredPaise)} captured</span>}
-        <Chevron size={13} className="tl__chevron" />
+        <span className={"attempt__status " + (STATUS_CLASS[a.status] ?? "tl__status--muted")}>{STATUS_LABEL[a.status] ?? a.status}</span>
+        <Chevron size={13} className="attempt__chev" />
       </button>
       {open && (
-        <dl className="tl__ids">
-          <div>
+        <dl className="detail attempt__ids">
+          <div className="detail__row">
             <dt>idempotency key</dt>
-            <dd>{a.idempotencyKey}</dd>
+            <dd className="mono">{a.idempotencyKey}</dd>
           </div>
           {a.razorpayRef && (
-            <div>
+            <div className="detail__row">
               <dt>razorpay {refLabel(a.razorpayRef)}</dt>
-              <dd>{a.razorpayRef}</dd>
+              <dd className="mono">{a.razorpayRef}</dd>
             </div>
           )}
           {a.settledPaymentId && (
-            <div>
+            <div className="detail__row">
               <dt>settled payment</dt>
-              <dd>{a.settledPaymentId}</dd>
+              <dd className="mono">{a.settledPaymentId}</dd>
             </div>
           )}
         </dl>
       )}
-    </div>
+    </li>
   );
 }

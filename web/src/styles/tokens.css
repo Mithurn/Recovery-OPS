@@ -57,65 +57,69 @@
    restrained accent. oklch-matched rather than pasted, so it holds together with our own
    status colors. */
 [data-surface="room"] {
+  --sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 40%);
+  --glow: radial-gradient(900px 460px at 20% -14%, oklch(36% 0.05 253 / 0.22), transparent 62%);
+  --ink-fill: linear-gradient(180deg, oklch(98% 0.002 248), oklch(90% 0.003 248));
+  --inner-top: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   /* Elevation ladder — depth from surface steps + borders, never shadow or gradient.
      L0 root · L1 panels · L2 cards/interactive · L3 selected/active/overlay. */
-  --bg: oklch(7% 0.009 262); /* L0 */
-  --bg-raised: oklch(11% 0.01 262); /* L1 */
-  --bg-raised-2: oklch(15% 0.012 262); /* L2 */
-  --bg-overlay: oklch(19% 0.013 262); /* L3 */
-  --bg-inset: oklch(5% 0.007 262); /* wells: JSON blocks, code, deep audit */
+  --bg: oklch(19.5% 0.004 264); /* L0 */
+  --bg-raised: oklch(22.2% 0.004 264); /* L1 */
+  --bg-raised-2: oklch(25.6% 0.005 268); /* L2 */
+  --bg-overlay: oklch(29% 0.006 271); /* L3 */
+  --bg-inset: oklch(17% 0.004 264); /* wells: JSON blocks, code, deep audit */
 
-  --line: rgba(255, 255, 255, 0.08); /* subtle — quiet dividers */
-  --line-strong: rgba(255, 255, 255, 0.16); /* default — card + control borders */
+  --line: rgba(255, 255, 255, 0.075); /* subtle — quiet dividers */
+  --line-strong: rgba(255, 255, 255, 0.13); /* default — card + control borders */
   --line-accent: var(--accent); /* strong — selected / focused */
 
   /* every text/bg pair below clears WCAG AA (>=4.5:1) on --bg / --bg-raised */
-  --text: oklch(96% 0.004 262);
-  --text-muted: oklch(77% 0.02 265);
-  --text-faint: oklch(63% 0.021 265);
-  --text-disabled: oklch(48% 0.015 265);
+  --text: oklch(96% 0.002 248);
+  --text-muted: oklch(73% 0.008 261);
+  --text-faint: oklch(58% 0.01 264);
+  --text-disabled: oklch(45% 0.008 264);
   --text-on-accent: oklch(99% 0 0); /* text over a solid accent / danger fill */
 
   --shadow-overlay: 0 16px 48px -12px rgba(0, 0, 0, 0.55); /* modals only — the one place depth needs a lift */
 
   /* the one brand accent — indigo/violet: selection, primary CTA, active navigation only */
-  --accent: oklch(67% 0.19 274);
-  --accent-hover: oklch(72% 0.19 274);
-  --accent-solid: oklch(58% 0.19 274);
+  --accent: oklch(72% 0.15 253);
+  --accent-hover: oklch(78% 0.12 250);
+  --accent-solid: oklch(60% 0.17 253);
   --accent-surface: color-mix(in oklch, var(--accent) 16%, var(--bg-raised));
   --accent-border: color-mix(in oklch, var(--accent) 42%, transparent);
-  --accent-dim: oklch(30% 0.1 274);
+  --accent-dim: oklch(34% 0.09 253);
 
   /* Status families — foreground · strong · surface (low fill) · border.
      Each maps to exactly one meaning, everywhere, never decoration. */
-  --clear: oklch(74% 0.17 155); /* success: recovered / passed / captured / allow */
-  --clear-strong: oklch(82% 0.17 155);
+  --clear: oklch(74% 0.09 160); /* success: recovered / passed / captured / allow */
+  --clear-strong: oklch(80% 0.09 160);
   --clear-surface: color-mix(in oklch, var(--clear) 15%, var(--bg-raised));
   --clear-border: color-mix(in oklch, var(--clear) 34%, transparent);
-  --clear-dim: oklch(30% 0.08 155);
+  --clear-dim: oklch(32% 0.04 160);
 
-  --deny: oklch(70% 0.19 25); /* danger: failed / clamp / veto / emergency stop */
-  --deny-strong: oklch(78% 0.19 25);
+  --deny: oklch(68% 0.12 22); /* danger: failed / clamp / veto / emergency stop */
+  --deny-strong: oklch(75% 0.11 22);
   --deny-surface: color-mix(in oklch, var(--deny) 15%, var(--bg-raised));
   --deny-border: color-mix(in oklch, var(--deny) 34%, transparent);
-  --deny-dim: oklch(32% 0.1 25);
+  --deny-dim: oklch(32% 0.05 22);
 
-  --wait: oklch(81% 0.13 80); /* warning: waiting on you / risk / pending / skip */
-  --wait-strong: oklch(86% 0.13 80);
+  --wait: oklch(77% 0.1 65); /* warning: waiting on you / risk / pending / skip */
+  --wait-strong: oklch(82% 0.09 65);
   --wait-surface: color-mix(in oklch, var(--wait) 14%, var(--bg-raised));
   --wait-border: color-mix(in oklch, var(--wait) 32%, transparent);
-  --wait-dim: oklch(38% 0.07 80);
+  --wait-dim: oklch(36% 0.05 65);
 
-  --info: oklch(73% 0.13 240); /* info: neutral system information */
+  --info: oklch(72% 0.15 253); /* info: neutral system information */
   --info-surface: color-mix(in oklch, var(--info) 14%, var(--bg-raised));
   --info-border: color-mix(in oklch, var(--info) 32%, transparent);
-  --info-dim: oklch(30% 0.08 240);
+  --info-dim: oklch(34% 0.09 253);
 
-  --agent: oklch(72% 0.15 250); /* agent: live reasoning / active execution — "working now" */
-  --agent-strong: oklch(80% 0.16 250);
+  --agent: oklch(72% 0.15 253); /* agent: live reasoning / active execution — "working now" */
+  --agent-strong: oklch(80% 0.13 250);
   --agent-surface: color-mix(in oklch, var(--agent) 16%, var(--bg-raised));
   --agent-border: color-mix(in oklch, var(--agent) 38%, transparent);
-  --agent-dim: oklch(30% 0.09 250);
+  --agent-dim: oklch(34% 0.09 253);
 
   --radius: 12px; /* large containers */
   --radius-sm: 8px; /* small controls */

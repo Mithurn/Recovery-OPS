@@ -24,6 +24,14 @@ import {
   CreditCard,
   Mail,
   ScrollText,
+  LogOut,
+  KeyRound,
+  Copy,
+  Zap,
+  Maximize2,
+  Minimize2,
+  PanelRight,
+  OctagonX,
   type LucideIcon,
 } from "lucide-react";
 import type { Activity } from "../loop/activities.js";
@@ -54,6 +62,14 @@ export {
   CreditCard,
   Mail,
   ScrollText,
+  LogOut,
+  KeyRound,
+  Copy,
+  Zap,
+  Maximize2,
+  Minimize2,
+  PanelRight,
+  OctagonX,
 };
 
 export const ACTIVITY_ICON: Record<Activity["kind"], LucideIcon> = {

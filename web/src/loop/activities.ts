@@ -111,7 +111,7 @@ function newPropose(ev: RawEvent): Activity {
         ? (() => {
             const s = p.spend as Record<string, unknown>;
             const usd = num(s.usdDelta);
-            return usd !== null && usd > 0 ? [{ label: "cost", value: `$${usd.toFixed(6)}` }] : [];
+            return usd != null && usd > 0 ? [{ label: "cost", value: `$${usd.toFixed(6)}` }] : [];
           })()
         : []),
       { label: "reasoning", value: reasoning },
