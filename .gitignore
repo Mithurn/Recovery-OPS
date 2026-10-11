@@ -1,0 +1,23 @@
+node_modules/
+dist/
+*.log
+
+# secrets
+.env
+.env.local
+
+# local working notes
+context/
+
+# test + build artifacts
+coverage/
+test-results/
+.playwright-mcp/
+*.png
+.env.bak-session
+
+# local-only working files
+/PROJECT_REVIEW.md
+/TODO.md
+bench/.cache/pre-corpus-v2-backup/
+

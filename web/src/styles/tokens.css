@@ -1,0 +1,146 @@
+:root {
+  /* One sans, one mono. Geist Sans = business/operator layer, Geist Mono = agent/machine layer.
+     No serif, no second sans, anywhere. */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: var(--font-sans);
+
+  /* Type scale (rem @ 16px root) */
+  --text-2xs: 0.6875rem; /* 11 — dense IDs, badges */
+  --text-xs: 0.75rem; /* 12 — secondary metadata, normal technical data */
+  --text-sm: 0.8125rem; /* 13 — buttons, list labels */
+  --text-base: 0.875rem; /* 14 — body / supporting text */
+  --text-15: 0.9375rem; /* 15 — activity titles */
+  --text-md: 1.125rem; /* 18 — product & customer titles */
+  --text-lg: 1.25rem; /* 20 — primary financial metrics */
+  --text-xl: 1.5rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.375rem;
+
+  --w-normal: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.4;
+  --leading-body: 1.5;
+  --leading-mono: 1.5;
+
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.008em;
+
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 72px;
+  --space-4xl: 112px;
+
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 260ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-modal: 30;
+  --z-toast: 40;
+
+  --measure: 68ch;
+}
+
+/* Recovery Room — near-black ground, tiny elevation steps, hairline alpha borders, one
+   restrained accent. oklch-matched rather than pasted, so it holds together with our own
+   status colors. */
+[data-surface="room"] {
+  /* Elevation ladder — depth from surface steps + borders, never shadow or gradient.
+     L0 root · L1 panels · L2 cards/interactive · L3 selected/active/overlay. */
+  --bg: oklch(7% 0.009 262); /* L0 */
+  --bg-raised: oklch(11% 0.01 262); /* L1 */
+  --bg-raised-2: oklch(15% 0.012 262); /* L2 */
+  --bg-overlay: oklch(19% 0.013 262); /* L3 */
+  --bg-inset: oklch(5% 0.007 262); /* wells: JSON blocks, code, deep audit */
+
+  --line: rgba(255, 255, 255, 0.08); /* subtle — quiet dividers */
+  --line-strong: rgba(255, 255, 255, 0.16); /* default — card + control borders */
+  --line-accent: var(--accent); /* strong — selected / focused */
+
+  /* every text/bg pair below clears WCAG AA (>=4.5:1) on --bg / --bg-raised */
+  --text: oklch(96% 0.004 262);
+  --text-muted: oklch(77% 0.02 265);
+  --text-faint: oklch(63% 0.021 265);
+  --text-disabled: oklch(48% 0.015 265);
+  --text-on-accent: oklch(99% 0 0); /* text over a solid accent / danger fill */
+
+  --shadow-overlay: 0 16px 48px -12px rgba(0, 0, 0, 0.55); /* modals only — the one place depth needs a lift */
+
+  /* the one brand accent — indigo/violet: selection, primary CTA, active navigation only */
+  --accent: oklch(67% 0.19 274);
+  --accent-hover: oklch(72% 0.19 274);
+  --accent-solid: oklch(58% 0.19 274);
+  --accent-surface: color-mix(in oklch, var(--accent) 16%, var(--bg-raised));
+  --accent-border: color-mix(in oklch, var(--accent) 42%, transparent);
+  --accent-dim: oklch(30% 0.1 274);
+
+  /* Status families — foreground · strong · surface (low fill) · border.
+     Each maps to exactly one meaning, everywhere, never decoration. */
+  --clear: oklch(74% 0.17 155); /* success: recovered / passed / captured / allow */
+  --clear-strong: oklch(82% 0.17 155);
+  --clear-surface: color-mix(in oklch, var(--clear) 15%, var(--bg-raised));
+  --clear-border: color-mix(in oklch, var(--clear) 34%, transparent);
+  --clear-dim: oklch(30% 0.08 155);
+
+  --deny: oklch(70% 0.19 25); /* danger: failed / clamp / veto / emergency stop */
+  --deny-strong: oklch(78% 0.19 25);
+  --deny-surface: color-mix(in oklch, var(--deny) 15%, var(--bg-raised));
+  --deny-border: color-mix(in oklch, var(--deny) 34%, transparent);
+  --deny-dim: oklch(32% 0.1 25);
+
+  --wait: oklch(81% 0.13 80); /* warning: waiting on you / risk / pending / skip */
+  --wait-strong: oklch(86% 0.13 80);
+  --wait-surface: color-mix(in oklch, var(--wait) 14%, var(--bg-raised));
+  --wait-border: color-mix(in oklch, var(--wait) 32%, transparent);
+  --wait-dim: oklch(38% 0.07 80);
+
+  --info: oklch(73% 0.13 240); /* info: neutral system information */
+  --info-surface: color-mix(in oklch, var(--info) 14%, var(--bg-raised));
+  --info-border: color-mix(in oklch, var(--info) 32%, transparent);
+  --info-dim: oklch(30% 0.08 240);
+
+  --agent: oklch(72% 0.15 250); /* agent: live reasoning / active execution — "working now" */
+  --agent-strong: oklch(80% 0.16 250);
+  --agent-surface: color-mix(in oklch, var(--agent) 16%, var(--bg-raised));
+  --agent-border: color-mix(in oklch, var(--agent) 38%, transparent);
+  --agent-dim: oklch(30% 0.09 250);
+
+  --radius: 12px; /* large containers */
+  --radius-sm: 8px; /* small controls */
+  --radius-xs: 5px; /* audit rows, chips */
+  --radius-full: 9999px;
+  --font-ui: var(--font-sans);
+  --font-prose: var(--font-sans);
+}
+
+[data-surface="store"] {
+  --bg: oklch(97% 0.006 85);
+  --bg-raised: oklch(99.2% 0.004 85);
+  --bg-inset: oklch(93.5% 0.009 85);
+  --line: oklch(88% 0.011 85);
+  --line-strong: oklch(74% 0.014 85);
+  --text: oklch(24% 0.012 60);
+  --text-muted: oklch(46% 0.012 60);
+  --text-faint: oklch(58% 0.011 60);
+
+  --accent: oklch(48% 0.11 35);
+  --accent-dim: oklch(92% 0.02 35);
+  --deny: oklch(48% 0.15 25);
+  --clear: oklch(45% 0.09 155);
+
+  --radius: 4px;
+  --font-ui: var(--font-sans);
+  --font-prose: var(--font-sans);
+}
