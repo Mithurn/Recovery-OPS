@@ -85,8 +85,8 @@ export interface CaseRepository {
   byId(id: string): Promise<RecoveryCase | null>;
   byOriginalPaymentId(paymentId: string): Promise<RecoveryCase | null>;
   listByRun(runId: string): Promise<RecoveryCase[]>;
-  listLive(): Promise<RecoveryCase[]>;
-  listByLane(lane: Lane): Promise<RecoveryCase[]>;
+  listLive(merchantRef?: string): Promise<RecoveryCase[]>;
+  listByLane(lane: Lane, merchantRef?: string): Promise<RecoveryCase[]>;
   listStaleInLane(lane: Lane, olderThan: Date): Promise<RecoveryCase[]>;
   // Scoped to before `beforeFailedAt` so the eval cannot peek forward.
   similarResolved(
@@ -94,5 +94,5 @@ export interface CaseRepository {
     opts: { method: string | null; beforeFailedAt: string; runId: string | null; limit: number },
   ): Promise<SimilarCaseSummary[]>;
   moveLane(id: string, from: Lane, to: Lane): Promise<boolean>;
-  metrics(): Promise<RoomMetrics>;
+  metrics(merchantRef?: string): Promise<RoomMetrics>;
 }

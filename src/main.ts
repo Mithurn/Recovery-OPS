@@ -1,157 +1,138 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import Fastify from "fastify";
+import fastifyStatic from "@fastify/static";
+import { Redis } from "ioredis";
 import { loadConfig } from "./config.js";
 import { createPool } from "./persistence/pool.js";
 import { PostgresCaseRepository } from "./persistence/case-repository.js";
 import { LanePublishingCaseRepository } from "./persistence/lane-publishing-case-repository.js";
 import { PostgresAttemptRepository } from "./persistence/attempt-repository.js";
 import { PostgresEventLog } from "./persistence/event-log.js";
+import { PostgresRecentActivity } from "./persistence/recent-activity.js";
 import { PublishingEventLog } from "./persistence/publishing-event-log.js";
 import { verifyAppendOnly } from "./persistence/audit-verify.js";
 import { PostgresWebhookInbox } from "./persistence/webhook-inbox.js";
-import { RunRepository } from "./persistence/run-repository.js";
-import { RazorpayClient } from "./execution/razorpay-client.js";
-import { RazorpayOutcomeResolver } from "./execution/razorpay-outcome-resolver.js";
-import { AttemptExecutor } from "./execution/attempt-executor.js";
-import { LoggingNotifier } from "./execution/notifier.js";
-import { WebhookHandler } from "./execution/webhook-handler.js";
-import { RecoveryPipeline } from "./worker/pipeline.js";
-import { runRecoveryAgent } from "./agent/recovery-agent.js";
 import { DEFAULT_LIMITS } from "./safety/safety-gate.js";
 import { resolveModel } from "./agent/model.js";
-import { checkModelHealth } from "./agent/model-health.js";
-import { createBudget, guardModel } from "./agent/budget.js";
-import { Redis } from "ioredis";
-import { redisConnection, recoveryQueue, recoveryWorker, enqueueRecovery } from "./worker/queue.js";
-import { RedisStopStore } from "./worker/redis-stop-store.js";
+import { redisConnection, recoveryQueue, recoveryWorker } from "./worker/queue.js";
 import { makeProcessor } from "./worker/recovery-worker.js";
 import { startReconcileSweep } from "./worker/reconcile-sweep.js";
-import { systemClock } from "./domain/attempt.js";
-import { isRiskHold, isHardDecline } from "./domain/case.js";
 import { CaseEventBus } from "./api/event-bus.js";
 import { registerRoutes } from "./api/routes.js";
+import { registerAuthRoutes } from "./api/auth-routes.js";
+import { keepRawJsonBody } from "./api/raw-body.js";
+import { AuthService } from "./auth/service.js";
+import { ConsoleMailer, ResendMailer } from "./auth/mailer.js";
+import { parseVaultKey } from "./auth/crypto.js";
+import { CredentialStore, verifyRazorpayKeys } from "./tenants/credentials.js";
+import { TenantRuntimes } from "./tenants/runtime.js";
 
 const config = loadConfig();
+const isProduction = config.NODE_ENV === "production";
+if (isProduction && !config.RESEND_API_KEY) throw new Error("RESEND_API_KEY is required in production");
 
 const pool = createPool(config.DATABASE_URL);
 const attempts = new PostgresAttemptRepository(pool);
 const webhooks = new PostgresWebhookInbox(pool);
-const runs = new RunRepository(pool);
 const bus = new CaseEventBus();
 const events = new PublishingEventLog(new PostgresEventLog(pool), bus);
 const cases = new LanePublishingCaseRepository(new PostgresCaseRepository(pool), events);
 
-const razorpay = new RazorpayClient({
-  keyId: config.RAZORPAY_KEY_ID,
-  keySecret: config.RAZORPAY_KEY_SECRET,
-  webhookSecret: config.RAZORPAY_WEBHOOK_SECRET,
-});
-const outcomeResolver = new RazorpayOutcomeResolver(razorpay);
-const notifier = new LoggingNotifier(events);
-const executor = new AttemptExecutor(attempts, events, razorpay, outcomeResolver, notifier);
+const connection = redisConnection(config.REDIS_URL);
+const redis = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
+const queue = recoveryQueue(connection);
 
-// One budget for the life of the process, not one per case — the cap is a process-wide ceiling.
-const agentBudget = createBudget(config.AGENT_SESSION_CAP_USD, {
-  usdPerMInput: config.AGENT_USD_PER_M_INPUT,
-  usdPerMOutput: config.AGENT_USD_PER_M_OUTPUT,
-});
-const agentModel = guardModel(
-  resolveModel(config.AGENT_MODEL, {
+const credentials = new CredentialStore(pool, parseVaultKey(config.VAULT_KEY));
+const runtimes = new TenantRuntimes({
+  credentials,
+  cases,
+  attempts,
+  events,
+  webhooks,
+  queue,
+  redis,
+  baseModel: resolveModel(config.AGENT_MODEL, {
     openRouterApiKey: config.OPENROUTER_API_KEY,
     googleApiKey: config.GOOGLE_GENERATIVE_AI_API_KEY,
   }),
-  agentBudget,
-);
-
-const connection = redisConnection(config.REDIS_URL);
-const stopRedis = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
-const stopStore = new RedisStopStore(stopRedis);
-
-const pipeline = new RecoveryPipeline({
-  cases,
-  attempts,
-  events,
-  gateway: razorpay,
-  outcomeResolver,
-  notifier,
-  clock: systemClock,
-  riskHoldForCase: isRiskHold,
-  hardDeclineForCase: isHardDecline,
-  stopRegistry: stopStore,
-  agentModel: config.AGENT_MODEL,
-  budget: agentBudget,
-  similarCases: (kase, query) =>
-    cases.similarResolved(kase.failureReason, {
-      method: query.method ?? null,
-      beforeFailedAt: kase.failedAt,
-      runId: kase.runId,
-      limit: query.limit ?? 8,
-    }),
-  runAgent: (deps, events) =>
-    runRecoveryAgent(
-      deps,
-      {
-        model: agentModel,
-        stepBudget: config.AGENT_STEP_BUDGET,
-        deadlineMs: config.AGENT_TIMEOUT_MS,
-      },
-      events,
-    ),
+  modelId: config.AGENT_MODEL,
+  agent: { stepBudget: config.AGENT_STEP_BUDGET, deadlineMs: config.AGENT_TIMEOUT_MS },
+  budget: {
+    capUsd: config.AGENT_USER_CAP_USD,
+    usdPerMInput: config.AGENT_USD_PER_M_INPUT,
+    usdPerMOutput: config.AGENT_USD_PER_M_OUTPUT,
+  },
 });
-const queue = recoveryQueue(connection);
-const worker = recoveryWorker(connection, makeProcessor(pipeline, queue, bus, events));
+
+const worker = recoveryWorker(
+  connection,
+  makeProcessor(
+    async (caseId) => {
+      const runtime = await runtimes.forCase(caseId);
+      if (!runtime) throw new Error(`no credentials for case ${caseId}`);
+      return runtime.pipeline;
+    },
+    queue,
+    bus,
+    events,
+  ),
+);
 const sweep = startReconcileSweep(attempts, cases, queue);
 
-const enqueuer = { enqueue: (caseId: string) => enqueueRecovery(queue, caseId) };
-const webhookHandler = new WebhookHandler({
-  client: razorpay,
-  inbox: webhooks,
-  attempts,
-  cases,
-  events,
-  executor,
-  enqueuer,
-  merchantRef: config.MERCHANT_REF,
-});
+const auth = new AuthService(
+  pool,
+  config.RESEND_API_KEY
+    ? new ResendMailer({ apiKey: config.RESEND_API_KEY, from: config.MAIL_FROM, appName: "Recovery OPS" })
+    : new ConsoleMailer(),
+  config.SESSION_SECRET,
+);
 
-const app = Fastify({ logger: true });
-// Keep the raw JSON bytes so the Razorpay webhook HMAC verifies against exactly what was sent.
-app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) => {
-  (req as { rawBody?: string }).rawBody = body as string;
-  try {
-    done(null, body === "" ? undefined : JSON.parse(body as string));
-  } catch (err) {
-    const parseError = err as Error & { statusCode?: number };
-    parseError.statusCode = 400;
-    done(parseError, undefined);
-  }
-});
-app.get("/health", async () => ({ status: "ok" }));
-await registerRoutes(app, {
-  cases,
-  attempts,
-  events,
-  runs,
-  queue,
-  webhookHandler,
-  bus,
-  pipeline,
-  modelHealth: () =>
-    checkModelHealth(
-      { openRouterApiKey: config.OPENROUTER_API_KEY, googleApiKey: config.GOOGLE_GENERATIVE_AI_API_KEY },
-      config.AGENT_MODEL,
-    ),
-  verifyAppendOnly: () => verifyAppendOnly(pool),
-  runtimeInfo: {
-    model: config.AGENT_MODEL,
-    deadlineMs: config.AGENT_TIMEOUT_MS,
-    stepBudget: config.AGENT_STEP_BUDGET,
-    limits: DEFAULT_LIMITS,
-    razorpayKeyId: config.RAZORPAY_KEY_ID,
+const app = Fastify({ logger: true, trustProxy: isProduction });
+keepRawJsonBody(app);
+
+await app.register(
+  async (api) => {
+    api.get("/health", async () => ({ status: "ok" }));
+    await registerAuthRoutes(api, {
+      auth,
+      credentials,
+      runtimes,
+      verifyKeys: verifyRazorpayKeys,
+      publicUrl: config.PUBLIC_URL,
+      secureCookies: isProduction,
+      codeRequestsPerHour: config.OTP_REQUESTS_PER_HOUR,
+    });
+    await registerRoutes(api, {
+      auth,
+      runtimes,
+      cases,
+      attempts,
+      events,
+      activity: new PostgresRecentActivity(pool),
+      queue,
+      bus,
+      verifyAppendOnly: () => verifyAppendOnly(pool),
+      runtimeInfo: {
+        model: config.AGENT_MODEL,
+        deadlineMs: config.AGENT_TIMEOUT_MS,
+        stepBudget: config.AGENT_STEP_BUDGET,
+        limits: DEFAULT_LIMITS,
+      },
+      maxCasesPerUser: config.MAX_CASES_PER_USER,
+    });
   },
-  gateway: razorpay,
-  razorpayWebhookSecret: config.RAZORPAY_WEBHOOK_SECRET,
-  demoAccessToken: config.DEMO_ACCESS_TOKEN,
-});
+  { prefix: "/api" },
+);
+
+const webRoot = resolve("web/dist");
+if (existsSync(webRoot)) {
+  await app.register(fastifyStatic, { root: webRoot });
+  app.setNotFoundHandler((req, reply) => {
+    if (req.url.startsWith("/api/")) return reply.code(404).send({ error: "not found" });
+    return reply.sendFile("index.html");
+  });
+}
 
 await app.listen({ port: config.PORT, host: config.HOST });
 

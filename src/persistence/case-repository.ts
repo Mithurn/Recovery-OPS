@@ -81,17 +81,22 @@ export class PostgresCaseRepository implements CaseRepository {
     return rows.map((r) => toCase(r as Row));
   }
 
-  async listLive(): Promise<RecoveryCase[]> {
+  async listLive(merchantRef?: string): Promise<RecoveryCase[]> {
     const { rows } = await this.db.query(
-      `SELECT ${COLUMNS} FROM recovery_cases WHERE run_id IS NULL ORDER BY created_at DESC LIMIT 200`,
+      `SELECT ${COLUMNS} FROM recovery_cases
+        WHERE run_id IS NULL AND ($1::text IS NULL OR merchant_ref = $1)
+        ORDER BY created_at DESC LIMIT 200`,
+      [merchantRef ?? null],
     );
     return rows.map((r) => toCase(r as Row));
   }
 
-  async listByLane(lane: Lane): Promise<RecoveryCase[]> {
+  async listByLane(lane: Lane, merchantRef?: string): Promise<RecoveryCase[]> {
     const { rows } = await this.db.query(
-      `SELECT ${COLUMNS} FROM recovery_cases WHERE run_id IS NULL AND lane = $1 ORDER BY updated_at DESC`,
-      [lane],
+      `SELECT ${COLUMNS} FROM recovery_cases
+        WHERE run_id IS NULL AND lane = $1 AND ($2::text IS NULL OR merchant_ref = $2)
+        ORDER BY updated_at DESC`,
+      [lane, merchantRef ?? null],
     );
     return rows.map((r) => toCase(r as Row));
   }
@@ -114,7 +119,7 @@ export class PostgresCaseRepository implements CaseRepository {
     return rowCount === 1;
   }
 
-  async metrics(): Promise<RoomMetrics> {
+  async metrics(merchantRef?: string): Promise<RoomMetrics> {
     const [byLane, settlement] = await Promise.all([
       this.db.query(
         `SELECT lane,
@@ -122,8 +127,9 @@ export class PostgresCaseRepository implements CaseRepository {
                 coalesce(sum(amount_paise), 0)::bigint AS amount,
                 coalesce(sum(recovered_paise), 0)::bigint AS recovered
            FROM recovery_cases
-          WHERE run_id IS NULL
+          WHERE run_id IS NULL AND ($1::text IS NULL OR merchant_ref = $1)
           GROUP BY lane`,
+        [merchantRef ?? null],
       ),
       // isSimulatedPaymentId's own patterns, so this split can never drift from the shared predicate.
       this.db.query(
@@ -137,8 +143,8 @@ export class PostgresCaseRepository implements CaseRepository {
            ), 0)::bigint AS simulated
          FROM recovery_attempts a
          JOIN recovery_cases c ON c.id = a.case_id
-        WHERE c.run_id IS NULL AND a.outcome = 'RECOVERED'`,
-        [simulatedPaymentIdLikePatterns()],
+        WHERE c.run_id IS NULL AND a.outcome = 'RECOVERED' AND ($2::text IS NULL OR c.merchant_ref = $2)`,
+        [simulatedPaymentIdLikePatterns(), merchantRef ?? null],
       ),
     ]);
 

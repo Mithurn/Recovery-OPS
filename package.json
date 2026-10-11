@@ -10,22 +10,19 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm:api\" \"npm:web\"",
     "web": "vite --config web/vite.config.ts",
-    "bench": "tsx --env-file-if-exists=.env bench/run.ts",
-    "decision-table": "tsx bench/decision-table.ts",
     "verify-audit": "tsx --env-file-if-exists=.env scripts/verify-audit.ts",
-    "explain": "tsx --env-file-if-exists=.env scripts/explain.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
     "db:schema": "docker compose exec -T postgres psql -U recovery -d recovery -v ON_ERROR_STOP=1 < db/schema.sql",
     "web:build": "vite build --config web/vite.config.ts",
-    "api": "tsx watch --env-file-if-exists=.env src/main.ts",
-    "seed:room": "tsx --env-file-if-exists=.env bench/seed-room.ts"
+    "api": "tsx watch --env-file-if-exists=.env src/main.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.62",
+    "@fastify/static": "^8.3.0",
+    "@fontsource/press-start-2p": "^5.3.0",
     "@openrouter/ai-sdk-provider": "^3.0.0",
-    "@xyflow/react": "^12.11.6",
     "ai": "^7.0.89",
     "bullmq": "^5.34.0",
     "fastify": "^5.2.0",
@@ -34,6 +31,7 @@
     "lucide-react": "^1.40.0",
     "motion": "^13.2.0",
     "pg": "^8.13.1",
+    "pixi.js": "^8.22.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -45,7 +43,7 @@
     "concurrently": "^10.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tsx": "^4.19.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vitest": "^4.1.11"

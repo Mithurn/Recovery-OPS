@@ -10,13 +10,17 @@ const schema = z.object({
   GOOGLE_GENERATIVE_AI_API_KEY: optionalString,
   // gemini-2.5-flash and gemini-2.0-flash are both retired; 3.6-flash is the successor.
   AGENT_MODEL: z.string().default("minimax/minimax-m3:free"),
-  RAZORPAY_KEY_ID: z.string().min(1),
-  RAZORPAY_KEY_SECRET: z.string().min(1),
-  RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
-  MERCHANT_REF: z.string().default("acme_subscriptions"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PUBLIC_URL: z.string().url().default("http://localhost:5173"),
+  VAULT_KEY: z.string().min(1),
+  SESSION_SECRET: z.string().min(16),
+  RESEND_API_KEY: optionalString,
+  MAIL_FROM: z.string().default("Recovery OPS <onboarding@resend.dev>"),
+  OTP_REQUESTS_PER_HOUR: z.coerce.number().int().positive().default(20),
+  MAX_CASES_PER_USER: z.coerce.number().int().positive().default(25),
   AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(90_000),
   AGENT_STEP_BUDGET: z.coerce.number().int().positive().default(6),
-  AGENT_SESSION_CAP_USD: z.coerce.number().positive().default(0.5),
+  AGENT_USER_CAP_USD: z.coerce.number().positive().default(0.1),
   // Token counts are measured off the provider's usage block; these rates turn them into money and
   // are a declared input, not a measurement. Defaults are the Gemini API standard tier — change
   // them with the model, and after any pricing change.
@@ -24,7 +28,6 @@ const schema = z.object({
   AGENT_USD_PER_M_OUTPUT: z.coerce.number().nonnegative().default(7.5),
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default("localhost"),
-  DEMO_ACCESS_TOKEN: optionalString,
 });
 
 export type Config = z.infer<typeof schema>;

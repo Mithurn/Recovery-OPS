@@ -5,9 +5,12 @@ import { enqueueRecovery } from "./queue.js";
 import type { CaseEventBus } from "../api/event-bus.js";
 import type { EventLog } from "../domain/ports.js";
 
-export function makeProcessor(pipeline: RecoveryPipeline, queue: Queue<RecoveryJob>, bus: CaseEventBus, events: EventLog) {
+export type PipelineSource = RecoveryPipeline | ((caseId: string) => Promise<RecoveryPipeline>);
+
+export function makeProcessor(source: PipelineSource, queue: Queue<RecoveryJob>, bus: CaseEventBus, events: EventLog) {
   return async function process(job: RecoveryJob, meta: { attemptsMade?: number } = {}): Promise<void> {
     const { caseId, reclaim: forcedReclaim } = job;
+    const pipeline = typeof source === "function" ? await source(caseId) : source;
     // Awaited so a TOOL_CALLED row always commits before its TOOL_RESULT, never out of order.
     const persistToolEvent = (type: "TOOL_CALLED" | "TOOL_RESULT", payload: Record<string, unknown>) =>
       events.append({ caseId, type, payload: { ...payload, activity: "investigate" } }).catch((err) => {

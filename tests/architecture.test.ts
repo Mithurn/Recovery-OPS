@@ -6,14 +6,14 @@ import { describe, expect, it } from "vitest";
 // is executed instead. Same instinct as the append-only test, which proves the audit guarantee by
 // connecting as the app role and expecting the database to refuse.
 //
-//   api / worker / bench  ->  agent · safety · execution · persistence  ->  domain
+//   api / worker / tenants  ->  agent · safety · execution · persistence  ->  domain
 //
 // Arrows point down. Nothing points up, and nothing below the orchestration tier knows what
 // database, queue or HTTP client is in use.
 
 const SRC = new URL("../src", import.meta.url).pathname;
 
-const ORCHESTRATION = ["api", "worker"];
+const ORCHESTRATION = ["api", "worker", "tenants"];
 const ADAPTERS = ["agent", "safety", "execution", "persistence"];
 const INFRASTRUCTURE = ["pg", "bullmq", "ioredis", "fastify"];
 

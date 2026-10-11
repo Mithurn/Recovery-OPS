@@ -38,12 +38,12 @@ export class LanePublishingCaseRepository implements CaseRepository {
     return this.inner.listByRun(runId);
   }
 
-  listLive(): Promise<RecoveryCase[]> {
-    return this.inner.listLive();
+  listLive(merchantRef?: string): Promise<RecoveryCase[]> {
+    return this.inner.listLive(merchantRef);
   }
 
-  listByLane(lane: Lane): Promise<RecoveryCase[]> {
-    return this.inner.listByLane(lane);
+  listByLane(lane: Lane, merchantRef?: string): Promise<RecoveryCase[]> {
+    return this.inner.listByLane(lane, merchantRef);
   }
 
   listStaleInLane(lane: Lane, olderThan: Date): Promise<RecoveryCase[]> {
@@ -57,7 +57,7 @@ export class LanePublishingCaseRepository implements CaseRepository {
     return this.inner.similarResolved(failureReason, opts);
   }
 
-  metrics(): Promise<RoomMetrics> {
-    return this.inner.metrics();
+  metrics(merchantRef?: string): Promise<RoomMetrics> {
+    return this.inner.metrics(merchantRef);
   }
 }

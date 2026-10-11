@@ -109,3 +109,37 @@ GRANT SELECT, INSERT                 ON recovery_events, razorpay_webhooks      
 GRANT SELECT, INSERT, UPDATE         ON recovery_cases, recovery_attempts, recovery_runs TO recovery_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public                                   TO recovery_app;
 GRANT USAGE                          ON SCHEMA public                                   TO recovery_app;
+
+CREATE TABLE IF NOT EXISTS users (
+  id         UUID PRIMARY KEY,
+  email      TEXT        NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS otp_codes (
+  email      TEXT PRIMARY KEY,
+  code_hash  TEXT        NOT NULL,
+  attempts   INT         NOT NULL DEFAULT 0,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);
+
+CREATE TABLE IF NOT EXISTS tenant_credentials (
+  user_id            UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  key_id             TEXT        NOT NULL,
+  key_secret_enc     TEXT        NOT NULL,
+  webhook_secret_enc TEXT        NOT NULL,
+  webhook_token      TEXT        NOT NULL UNIQUE,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON users, otp_codes, sessions, tenant_credentials TO recovery_app;

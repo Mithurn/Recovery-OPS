@@ -44,6 +44,7 @@ export type PipelineDeps = BuildDeps & {
   riskHoldForCase?: (kase: RecoveryCase) => boolean;
   hardDeclineForCase?: (kase: RecoveryCase) => boolean;
   stopRegistry?: StopStore;
+  merchantRef?: string;
 };
 
 export class RecoveryPipeline {
@@ -69,7 +70,7 @@ export class RecoveryPipeline {
 
   async requestStopAll(request: StopRequest): Promise<{ stoppedNow: number }> {
     await this.stopRegistry.stopAll(request);
-    const live = await this.deps.cases.listLive();
+    const live = await this.deps.cases.listLive(this.deps.merchantRef);
     let stoppedNow = 0;
     for (const kase of live) {
       if (!IN_FLIGHT_LANES.includes(kase.lane) && !TERMINAL_LANES.includes(kase.lane)) {
