@@ -80,18 +80,3 @@ export function timeAgo(iso: string, now = Date.now()): string {
   if (ms < DAY_MS) return `${Math.floor(ms / HOUR_MS)}h`;
   return `${Math.floor(ms / DAY_MS)}d`;
 }
-
-export type ReasonRate = { reason: string; total: number; recovered: number; rate: number };
-
-export function recoveryByReason(cases: RecoveryCase[]): ReasonRate[] {
-  const groups = new Map<string, { total: number; recovered: number }>();
-  for (const c of cases) {
-    const g = groups.get(c.failureReason) ?? { total: 0, recovered: 0 };
-    g.total += 1;
-    if (c.lane === "RECOVERED") g.recovered += 1;
-    groups.set(c.failureReason, g);
-  }
-  return [...groups.entries()]
-    .map(([reason, g]) => ({ reason, ...g, rate: g.recovered / g.total }))
-    .sort((a, b) => b.total - a.total || b.rate - a.rate);
-}

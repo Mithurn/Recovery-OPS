@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { AGENT_INFO, agentForLane } from "../floor/agents";
 import type { RecoveryCase } from "../types.js";
 import { customerLabel, rupees } from "../ui/format.js";
-import { ReasonBars } from "./ReasonBars";
 import { casePriority, countByStatus, facetsOf, filterCases, humanize, NO_FILTERS, STATUS_GROUPS, statusOf, timeAgo, type CaseFilters, type StatusGroup } from "./cases";
 
 const STATUS_TONE: Record<StatusGroup, string> = {
@@ -65,8 +64,6 @@ export function CasesPage({ cases, selectedId, onOpen }: { cases: RecoveryCase[]
           </select>
         </div>
       </header>
-
-      <ReasonBars cases={cases} />
 
       <div className="segments" role="group" aria-label="Status">
         <button className="segment" aria-pressed={filters.status === ""} onClick={() => set("status", "")}>

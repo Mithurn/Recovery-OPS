@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RecoveryCase } from "../types.js";
-import { casePriority, countByStatus, filterCases, NO_FILTERS, recoveryByReason, timeAgo } from "./cases";
+import { casePriority, countByStatus, filterCases, NO_FILTERS, timeAgo } from "./cases";
 
 const base: RecoveryCase = {
   id: "1",
@@ -55,18 +55,5 @@ describe("timeAgo", () => {
     expect(timeAgo("2026-01-01T23:58:00.000Z", now)).toBe("2m");
     expect(timeAgo("2026-01-01T20:00:00.000Z", now)).toBe("4h");
     expect(timeAgo("2025-12-30T00:00:00.000Z", now)).toBe("3d");
-  });
-});
-
-describe("recoveryByReason", () => {
-  it("reports the recovered share per failure reason, most common first", () => {
-    const rows = recoveryByReason([
-      make({ id: "1", lane: "RECOVERED" }),
-      make({ id: "2", lane: "ESCALATED" }),
-      make({ id: "3", failureReason: "card_expired", lane: "RECOVERED" }),
-    ]);
-    expect(rows.map((r) => r.reason)).toEqual(["card_declined", "card_expired"]);
-    expect(rows[0]).toMatchObject({ total: 2, recovered: 1, rate: 0.5 });
-    expect(rows[1]!.rate).toBe(1);
   });
 });

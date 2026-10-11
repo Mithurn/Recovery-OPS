@@ -675,13 +675,3 @@ textarea.input {
 @media (prefers-reduced-motion: reduce) { .stat__pop, .stat__delta, .recovered__card, .recovered__badge { animation: none; } }
 
 .field-stack { display: grid; gap: 6px; }
-
-/* ---------- recovery by reason ---------- */
-.bars { display: grid; gap: 12px; padding: 14px 16px; }
-.bars__title { margin: 0; font-size: var(--text-xs); font-weight: var(--w-medium); color: var(--text-faint); }
-.bars__list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.bars__row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 44px; align-items: center; gap: 14px; font-size: var(--text-xs); }
-.bars__label { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
-.bars__track { height: 12px; background: var(--bg-inset); box-shadow: 0 0 0 2px var(--line); }
-.bars__fill { display: block; height: 100%; background-image: repeating-linear-gradient(90deg, var(--text) 0 8px, color-mix(in oklch, var(--text) 70%, black) 8px 10px); transition: width 600ms var(--ease-out); }
-.bars__value { color: var(--text); text-align: right; }
