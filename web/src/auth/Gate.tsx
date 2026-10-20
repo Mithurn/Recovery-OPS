@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { currentUser, getCredentials, logout, UNAUTHORIZED_EVENT, type Credentials, type User } from "../api.js";
+import { currentUser, getCredentials, isBackendUp, logout, UNAUTHORIZED_EVENT, type Credentials, type User } from "../api.js";
 import { Spinner } from "../ui/motion.js";
+import { Link, PATHS } from "../routes.js";
 import { Login } from "./Login.js";
 
 export type Session = {
@@ -10,7 +11,7 @@ export type Session = {
   signOut: () => Promise<void>;
 };
 
-type State = { phase: "loading" } | { phase: "anonymous" } | { phase: "signed-in"; user: User; creds: Credentials };
+type State = { phase: "loading" } | { phase: "anonymous" } | { phase: "offline" } | { phase: "signed-in"; user: User; creds: Credentials };
 
 export function Gate({ children }: { children: (session: Session) => React.ReactNode }) {
   const [state, setState] = useState<State>({ phase: "loading" });
@@ -20,7 +21,7 @@ export function Gate({ children }: { children: (session: Session) => React.React
       const user = await currentUser();
       setState({ phase: "signed-in", user, creds: await getCredentials() });
     } catch {
-      setState({ phase: "anonymous" });
+      setState({ phase: (await isBackendUp()) ? "anonymous" : "offline" });
     }
   }, []);
 
@@ -35,6 +36,19 @@ export function Gate({ children }: { children: (session: Session) => React.React
     return (
       <main className="auth">
         <Spinner size={18} />
+      </main>
+    );
+  }
+  if (state.phase === "offline") {
+    return (
+      <main className="auth">
+        <section className="auth__card">
+          <h1 className="auth__title">Live backend is offline</h1>
+          <p className="auth__lede">The live workspace is switched off to save cost. The replay shows the full flow.</p>
+          <Link className="auth__link" to={PATHS.demo}>
+            Open the demo
+          </Link>
+        </section>
       </main>
     );
   }

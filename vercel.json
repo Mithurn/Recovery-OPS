@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run web:build",
+  "outputDirectory": "web/dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://recoveryops.duckdns.org/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

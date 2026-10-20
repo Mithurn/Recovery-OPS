@@ -44,6 +44,7 @@ export type Credentials =
   | { connected: true; keyId: string; webhookUrl: string; webhookSecret: string };
 export type Scenario = { id: string; label: string; amountPaise: number; method: string; errorReason: string };
 
+export const isBackendUp = () => fetch(`${BASE}/health`).then((r) => r.ok).catch(() => false);
 export const currentUser = () => get<{ user: User }>("/auth/me").then((r) => r.user);
 export const requestCode = (email: string) => post<{ sent: true }>("/auth/request", { email });
 export const verifyCode = (email: string, code: string) => post<{ user: User }>("/auth/verify", { email, code }).then((r) => r.user);
