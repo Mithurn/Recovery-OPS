@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Type-check server
         run: npx tsc --noEmit
 
@@ -34,3 +37,47 @@ jobs:
       - name: Run unit tests
         # test:unit excludes *.integration.test.ts — no Postgres, Redis, or model API needed.
         run: npm run test:unit
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: recovery
+          POSTGRES_PASSWORD: recovery_dev
+          POSTGRES_DB: recovery
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U recovery -d recovery"
+          --health-interval 2s --health-timeout 2s --health-retries 15
+      redis:
+        image: redis:7
+        ports:
+          - 6381:6379
+
+    env:
+      DATABASE_URL: postgres://recovery_app:recovery_dev@localhost:5434/recovery
+      ADMIN_DATABASE_URL: postgres://recovery:recovery_dev@localhost:5434/recovery
+      REDIS_URL: redis://localhost:6381
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Load schema and set the app role password
+        run: |
+          psql "$ADMIN_DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+          psql "$ADMIN_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE recovery_app PASSWORD 'recovery_dev'"
+
+      - name: Run all tests
+        run: npm test

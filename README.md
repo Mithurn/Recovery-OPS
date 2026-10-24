@@ -77,7 +77,19 @@ The agent recovers far more than a fixed schedule and lands within about three p
 ```bash
 npm run test:unit     # no services needed
 npm test              # adds Postgres and Redis integration tests
+npm run test:coverage # same as npm test, with a coverage report
+npm run lint          # ESLint
+npm run typecheck     # server and tests; web: npx tsc --noEmit -p web/tsconfig.json
 ```
+
+Integration tests skip themselves unless `DATABASE_URL`, `ADMIN_DATABASE_URL` and `REDIS_URL` are set (`docker compose up -d` provides both services; load `db/schema.sql` first if you use your own Postgres). The Razorpay client tests also need test keys.
+
+## Contributing
+
+1. Branch from `main`.
+2. Keep to the dependency rule in `tests/architecture.test.ts` (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)).
+3. Add tests with your change, then make sure `npm run lint`, `npm run typecheck`, `npm run web:build` and `npm test` pass. CI runs the same checks.
+4. Open a pull request.
 
 ## Credits
 
