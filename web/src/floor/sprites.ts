@@ -259,48 +259,6 @@ function drawGlasses(buf: Buf): void {
 }
 
 type Cloth = 'suit' | 'dressshirt' | 'polo' | 'blouse' | 'cardigan' | 'sweater';
-function bodyShape(buf: Buf, col: RGB, heavy = false): void {
-  const [, base, sh] = shades(col);
-  const rows: [number, number, number][] = heavy
-    ? [[19, 5, 12], [20, 3, 14], [21, 2, 15], [22, 1, 16], [23, 1, 16], [24, 0, 17], [25, 0, 17], [26, 0, 17], [27, 0, 17]]
-    : [[19, 6, 11], [20, 4, 13], [21, 3, 14], [22, 2, 15], [23, 2, 15], [24, 1, 16], [25, 1, 16], [26, 1, 16], [27, 1, 16]];
-  for (const [y, a, b] of rows) rect(buf, a, y, b, y, base);
-  const [lo, hi] = heavy ? [1, 16] : [2, 15];
-  for (let y = 22; y < 28; y++) { set(buf, lo, y, sh); set(buf, hi, y, sh); }
-}
-function drawClothing(buf: Buf, kind: Cloth, c1: RGB, c2: RGB | undefined, tie: RGB | undefined, skin: string, heavy = false): void {
-  const [hi, base, sh] = shades(c1);
-  bodyShape(buf, c1, heavy);
-  if (kind === 'suit') {
-    const white: RGB = [238, 238, 236];
-    for (const [x, y] of [[8, 19], [9, 19], [7, 20], [8, 20], [9, 20], [10, 20], [8, 21], [9, 21]] as const) set(buf, x, y, white);
-    for (const [x, y] of [[6, 20], [7, 21], [11, 20], [10, 21], [6, 21], [11, 21]] as const) set(buf, x, y, sh);
-    if (tie) { for (let y = 20; y < 26; y++) { set(buf, 8, y, tie); set(buf, 9, y, tie); } set(buf, 8, 20, shades(tie)[0]); }
-    else for (let y = 22; y < 26; y++) { set(buf, 8, y, white); set(buf, 9, y, white); }
-  } else if (kind === 'dressshirt') {
-    for (const [x, y] of [[6, 19], [7, 19], [10, 19], [11, 19], [7, 20], [10, 20]] as const) set(buf, x, y, sh);
-    for (let y = 20; y < 27; y += 2) set(buf, 8, y, sh);
-    if (tie) for (let y = 19; y < 26; y++) { set(buf, 8, y, tie); set(buf, 9, y, tie); }
-  } else if (kind === 'polo') {
-    for (const [x, y] of [[6, 19], [7, 19], [10, 19], [11, 19]] as const) set(buf, x, y, hi);
-    set(buf, 8, 20, sh); set(buf, 8, 22, sh);
-    const accent = c2 ? shades(c2)[1] : hi;
-    for (const [x, y] of [[7, 20], [9, 20]] as const) set(buf, x, y, accent);
-  } else if (kind === 'blouse') {
-    const s = SKIN[skin];
-    for (const [x, y] of [[7, 19], [8, 19], [9, 19], [10, 19], [8, 20], [9, 20]] as const) set(buf, x, y, s.sh);
-    for (let x = 5; x < 13; x++) if (eq(rgbAt(buf, x, 20), base)) set(buf, x, 20, hi);
-  } else if (kind === 'cardigan') {
-    const inner: RGB = c2 ? shades(c2)[1] : [235, 233, 226];
-    for (let y = 19; y < 27; y++) { set(buf, 8, y, inner); set(buf, 9, y, inner); }
-    for (const [x, y] of [[6, 19], [7, 19], [10, 19], [11, 19]] as const) set(buf, x, y, sh);
-  } else if (kind === 'sweater') {
-    for (const [x, y] of [[6, 19], [7, 19], [8, 19], [9, 19], [10, 19], [11, 19]] as const) set(buf, x, y, sh);
-  }
-}
-function collarNeck(buf: Buf, skin: string): void {
-  rect(buf, 7, 18, 10, 19, SKIN[skin].sh);
-}
 
 const SHOE: RGB = [44, 40, 48];
 
@@ -457,16 +415,6 @@ function drawHeadGroup(buf: Buf, r: Recipe): void {
 function defaultPants(r: Recipe): RGB {
   if (r.pants) return r.pants;
   return r.cloth === 'suit' ? shades(r.c1)[2] : [54, 56, 70];
-}
-
-function compose(r: Recipe): Buf {
-  CUR_W = PORTRAIT_W; CUR_H = PORTRAIT_H;
-  const buf = new Uint8ClampedArray(PORTRAIT_W * PORTRAIT_H * 4);
-  drawClothing(buf, r.cloth, r.c1, r.c2, r.tie, r.skin, r.heavy ?? false);
-  collarNeck(buf, r.skin);
-  drawHeadGroup(buf, r);
-  outlinePass(buf);
-  return buf;
 }
 
 function composeScene(r: Recipe, phase: number, back: boolean): Buf {
