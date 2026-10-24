@@ -17,7 +17,7 @@ Integration tests were run against a local Postgres 16 and Redis 7 (schema from 
 | `npm audit` | 13 vulns (3 critical, 7 high, 3 moderate) | 9 (1 critical, 5 high, 3 moderate) |
 
 The 9 skipped tests are the Razorpay test-mode client tests, which need real test keys.
-Overall coverage is low mostly because `web/src` (about 60% of statements: PixiJS floor, React views, demo engine) has almost no tests.
+Measured separately at the end: `src/` (server) 73.74% statements, `web/src` 13.45%. The overall figure is low mostly because the web app (PixiJS floor, React views, demo engine) has almost no tests. The combined run above uses one include list, so its totals differ slightly from the separate runs.
 
 ## Changes by phase
 
