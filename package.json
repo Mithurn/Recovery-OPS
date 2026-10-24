@@ -16,7 +16,8 @@
     "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
     "db:schema": "docker compose exec -T postgres psql -U recovery -d recovery -v ON_ERROR_STOP=1 < db/schema.sql",
     "web:build": "vite build --config web/vite.config.ts",
-    "api": "tsx watch --env-file-if-exists=.env src/main.ts"
+    "api": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.62",
@@ -40,6 +41,7 @@
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.11",
     "concurrently": "^10.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
