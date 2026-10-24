@@ -17,7 +17,8 @@
     "db:schema": "docker compose exec -T postgres psql -U recovery -d recovery -v ON_ERROR_STOP=1 < db/schema.sql",
     "web:build": "vite build --config web/vite.config.ts",
     "api": "tsx watch --env-file-if-exists=.env src/main.ts",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.62",
@@ -36,6 +37,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.10.5",
     "@types/pg": "^8.11.10",
     "@types/react": "^19.0.4",
@@ -43,10 +45,14 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^4.1.11",
     "concurrently": "^10.0.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.13.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tsx": "^4.23.15",
     "typescript": "^5.7.3",
+    "typescript-eslint": "^8.72.0",
     "vite": "^6.0.7",
     "vitest": "^4.1.11"
   }
