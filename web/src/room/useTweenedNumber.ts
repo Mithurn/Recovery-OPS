@@ -33,7 +33,6 @@ export function useTweenedNumber(target: number, ms = 600): number {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, ms]);
 
   return display;
