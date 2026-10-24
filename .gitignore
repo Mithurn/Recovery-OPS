@@ -16,3 +16,6 @@ test-results/
 *.png
 .env.bak-session
 
+
+# local Redis dumps
+dump.rdb
