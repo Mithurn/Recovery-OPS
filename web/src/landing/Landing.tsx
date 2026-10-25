@@ -3,6 +3,7 @@ import { DESKS } from "../floor/layout";
 import { Link, PATHS } from "../routes";
 import { AgentPortrait } from "./AgentPortrait";
 import { HeroFloor } from "./HeroFloor";
+import { ProductVideo } from "./ProductVideo";
 import "./landing.css";
 
 const toHex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
@@ -47,6 +48,7 @@ function Nav() {
         Recovery OPS
       </Link>
       <nav className="lp-nav__links" aria-label="Sections">
+        <a href="#tour">Watch</a>
         <a href="#how">How it works</a>
         <a href="#product">Product</a>
         <a href="#safety">Safety</a>
@@ -91,6 +93,12 @@ export function Landing() {
               <span className="lp-band__label">{s.label}</span>
             </div>
           ))}
+        </section>
+
+        <section id="tour" className="lp-section lp-tour">
+          <p className="lp-eyebrow">The tour</p>
+          <h2 className="lp-h2">A failed payment, start to finish</h2>
+          <ProductVideo />
         </section>
 
         <section id="how" className="lp-section">
