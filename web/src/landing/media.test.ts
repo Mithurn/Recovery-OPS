@@ -8,7 +8,7 @@ describe("landing tour media", () => {
   const paths = [...source.matchAll(/"(\/media\/[^"]+)"/g)].map((m) => m[1]!);
 
   it("references a poster and both video encodes", () => {
-    expect(paths).toEqual(expect.arrayContaining(["/media/recovery-ad-av1.mp4", "/media/recovery-ad-h264.mp4", "/media/recovery-ad-poster.webp"]));
+    expect(paths).toEqual(expect.arrayContaining(["/media/recovery-tour-av1.mp4", "/media/recovery-tour-h264.mp4", "/media/recovery-tour-poster.webp"]));
   });
 
   it.each([...new Set(paths)])("ships %s", (path) => {
