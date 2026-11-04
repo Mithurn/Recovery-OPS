@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>Recovery OPS — brag</title>
+<script src="assets/gsap.min.js"></script>
+<style>
+@font-face{font-family:"Geist";font-weight:500;src:url(assets/fonts/geist-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Geist";font-weight:600;src:url(assets/fonts/geist-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Geist";font-weight:700;src:url(assets/fonts/geist-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Geist";font-weight:500;src:url(assets/fonts/geist-latin-ext-500-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Geist";font-weight:600;src:url(assets/fonts/geist-latin-ext-600-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Geist";font-weight:700;src:url(assets/fonts/geist-latin-ext-700-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Geist Mono";font-weight:500;src:url(assets/fonts/geist-mono-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Geist Mono";font-weight:600;src:url(assets/fonts/geist-mono-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Geist Mono";font-weight:500;src:url(assets/fonts/geist-mono-latin-ext-500-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Geist Mono";font-weight:600;src:url(assets/fonts/geist-mono-latin-ext-600-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Press Start 2P";font-weight:400;src:url(assets/fonts/press-start-2p-latin-400-normal.woff2) format("woff2")}
+
+:root{
+  --bg:#17181b; --panel:#1d1e22; --panel2:#24262b; --line:#34363d;
+  --text:#f2f3f5; --muted:#a9adb6; --faint:#8a8f99;
+  --sky:#4f9faf; --lilac:#9482d3; --coral:#d96a62; --mint:#5ca97a; --lemon:#dcab3c;
+  --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; --pixel:"Press Start 2P",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);font-family:var(--sans);color:var(--text)}
+#root{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+.scene{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden}
+.abs{position:absolute}
+#grid{position:absolute;inset:0;opacity:.5;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:96px 96px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 72%);mask-image:radial-gradient(ellipse at 50% 50%,#000 0%,transparent 72%)}
+#aura{position:absolute;left:260px;top:-200px;width:1400px;height:1100px;border-radius:50%;opacity:.3;
+  background:radial-gradient(closest-side,rgba(79,159,175,.35),rgba(148,130,211,.12) 55%,transparent 75%);filter:blur(30px)}
+.eyebrow{font-family:var(--mono);font-weight:600;font-size:28px;letter-spacing:.14em;text-transform:uppercase;color:var(--sky)}
+.h1{font-weight:700;letter-spacing:-.035em;line-height:1.02}
+.mono{font-family:var(--mono);font-weight:500}
+.mask{overflow:hidden;display:block;padding-bottom:.16em;margin-bottom:-.16em}
+.mask>span{display:block}
+
+/* S1 */
+#toast{left:560px;top:250px;width:800px;padding:44px 52px 48px;background:var(--panel);border:2px solid var(--line);border-radius:28px;
+  box-shadow:0 40px 120px rgba(0,0,0,.55),0 0 0 1px rgba(217,106,98,.0)}
+#toast .row{display:flex;align-items:center;gap:18px}
+#toast .dot{width:20px;height:20px;border-radius:50%;background:var(--coral);box-shadow:0 0 24px var(--coral)}
+#toast .ev{font-family:var(--mono);font-weight:600;font-size:32px;color:var(--text)}
+#toast .tag{margin-left:auto;font-family:var(--mono);font-weight:600;font-size:28px;color:var(--coral);border:2px solid var(--coral);padding:6px 18px;border-radius:999px}
+#toast .amt{font-weight:700;font-size:168px;letter-spacing:-.045em;line-height:1;margin-top:28px}
+#toast .why{font-family:var(--mono);font-weight:500;font-size:32px;color:var(--muted);margin-top:14px}
+#redglow{left:360px;top:120px;width:1200px;height:760px;border-radius:50%;background:radial-gradient(closest-side,rgba(217,106,98,.42),transparent 72%);opacity:0;filter:blur(20px)}
+#hook{left:0;top:632px;width:1920px;text-align:center}
+#hook .l{font-size:128px}
+#hook .l2{font-size:128px;color:var(--text)}
+#hook em{font-style:normal;color:var(--mint)}
+
+/* S2 */
+#s2head{left:138px;top:92px}
+#s2head h2{font-size:84px;margin-top:18px}
+#cards{left:113px;top:408px;width:1694px;height:500px}
+.card{position:absolute;top:0;width:318px;height:500px;background:var(--panel);border:2px solid var(--line);border-radius:26px;padding:28px 26px;overflow:hidden}
+.card .no{font-family:var(--mono);font-weight:600;font-size:28px;color:var(--faint)}
+.card .bar{position:absolute;left:0;top:0;right:0;height:6px;background:var(--ac);opacity:.35}
+.card .desk{position:relative;height:210px;margin:14px -2px 0;display:flex;align-items:flex-end;justify-content:center}
+.card .desk svg{display:block}
+.card .role{font-family:var(--mono);font-weight:600;font-size:28px;color:var(--ac);margin-top:26px;line-height:1.2;letter-spacing:.06em;text-transform:uppercase}
+.card .title{font-weight:700;font-size:46px;letter-spacing:-.03em;line-height:1.06;margin-top:16px}
+.card .txt{font-size:23px;line-height:1.38;color:var(--muted);margin-top:12px}
+#packet{left:0;top:0;padding:12px 22px;border-radius:999px;background:var(--text);color:#17181b;font-weight:700;font-size:30px;letter-spacing:-.02em;box-shadow:0 0 0 6px rgba(79,159,175,.25),0 12px 40px rgba(0,0,0,.5)}
+#band5{left:0;top:940px;width:1920px;text-align:center;font-family:var(--mono);font-weight:600;font-size:28px;letter-spacing:.06em;color:var(--muted)}
+#band5 b{color:var(--text)}
+
+/* S3 */
+#s3head{left:130px;top:96px}
+#s3head .h1{font-size:112px}
+#s3head .l2{color:var(--text)}
+#s3head em{font-style:normal;color:var(--coral)}
+#log{left:130px;top:468px;width:1020px;height:470px;background:var(--panel);border:2px solid var(--line);border-radius:26px;padding:26px 34px}
+#log .hd{font-family:var(--mono);font-weight:600;font-size:28px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;padding-bottom:16px;border-bottom:2px solid var(--line)}
+.ln{display:flex;align-items:center;gap:20px;height:64px;font-size:30px;font-weight:500;white-space:nowrap}
+.ln .pt{width:14px;height:14px;border-radius:3px;flex:none}
+.ln .chip{font-family:var(--mono);font-weight:500;font-size:28px;padding:4px 14px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+.ln .chip.ok{color:var(--mint)}
+.ln .chip.bad{color:var(--coral);border-color:rgba(217,106,98,.55)}
+.ln .chip.warn{color:var(--lemon);border-color:rgba(220,171,60,.5)}
+#verdict{left:1210px;top:468px;width:580px;height:470px;background:var(--panel);border:2px solid var(--coral);border-radius:26px;padding:40px 44px;box-shadow:0 0 90px rgba(217,106,98,.28)}
+#verdict .vt{display:inline-block;font-family:var(--mono);font-weight:600;font-size:28px;letter-spacing:.08em;text-transform:uppercase;color:#17181b;background:var(--coral);padding:8px 18px;border-radius:10px}
+#verdict p{font-size:34px;line-height:1.28;margin-top:28px;font-weight:500;letter-spacing:-.01em}
+#verdict .res{font-weight:700;color:var(--text);font-size:60px;line-height:1.1;margin-top:34px;letter-spacing:-.02em}
+#verdict .res em{font-style:normal;color:var(--mint)}
+#flash{left:0;top:0;width:1920px;height:1080px;background:#fff;opacity:0}
+
+/* S4 */
+#nine{left:130px;top:150px;font-weight:700;font-size:640px;letter-spacing:-.07em;line-height:.9;color:var(--text)}
+#nine2{left:150px;top:752px;font-size:56px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
+#nine2 span{color:var(--muted);font-weight:500}
+#rules{left:780px;top:136px;width:1010px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.rule{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:26px 30px;height:196px;display:flex;flex-direction:column;justify-content:center}
+.rule b{font-size:40px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
+.rule span{font-size:29px;color:var(--muted);margin-top:8px;font-weight:500}
+.rule i{display:block;width:34px;height:6px;border-radius:3px;margin-bottom:16px}
+
+/* S5 */
+#shotwrap{left:0;top:0;width:1920px;height:1080px;perspective:2200px}
+#shot{position:absolute;left:210px;top:178px;width:1500px;height:693px;border-radius:22px;overflow:hidden;border:2px solid var(--line);box-shadow:0 60px 160px rgba(0,0,0,.7),0 0 140px rgba(79,159,175,.18);transform-origin:50% 50%;background:#000}
+#shot img{width:1500px;height:693px;display:block}
+#spot{left:1028px;top:46px;width:280px;height:92px;border:4px solid var(--mint);border-radius:18px;opacity:0;box-shadow:0 0 50px rgba(92,169,122,.6)}
+#cap{left:0;top:912px;width:1920px;text-align:center;font-family:var(--mono);font-weight:500;font-size:28px;color:var(--faint);letter-spacing:.04em}
+#recpill{left:1180px;top:130px;padding:20px 34px;border-radius:22px;background:var(--panel);border:2px solid var(--mint);display:flex;align-items:baseline;gap:18px;box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 80px rgba(92,169,122,.35)}
+#recpill .v{font-weight:700;font-size:92px;letter-spacing:-.04em;color:var(--mint)}
+#recpill .k{font-size:34px;font-weight:600;color:var(--muted)}
+#dim{left:0;top:0;width:1920px;height:1080px;background:var(--bg);opacity:0}
+#mark{left:0;top:236px;width:1920px;display:flex;align-items:center;justify-content:center;gap:44px}
+#mark .sq{width:96px;height:96px;background:var(--text);box-shadow:20px 20px 0 0 var(--sky)}
+#mark .nm{font-weight:700;font-size:176px;letter-spacing:-.05em;line-height:1}
+#tag{left:0;top:508px;width:1920px;text-align:center;font-size:62px;font-weight:600;letter-spacing:-.03em;color:var(--text)}
+#tag em{font-style:normal;color:var(--mint)}
+#cta{left:0;top:700px;width:1920px;display:flex;justify-content:center;align-items:center;gap:30px}
+#cta .btn{font-weight:600;font-size:34px;padding:22px 44px;border-radius:16px;background:var(--text);color:#17181b;letter-spacing:-.01em}
+#cta .gh{font-family:var(--mono);font-weight:500;font-size:30px;color:var(--muted);padding:20px 8px}
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="24.2" data-width="1920" data-height="1080">
+
+  <div id="grid"></div>
+  <div id="aura"></div>
+
+  <!-- ============ SCENE 1: FAILURE ============ -->
+  <div id="s1" class="scene clip" data-start="0" data-duration="4.0" data-track-index="1">
+    <div id="redglow" class="abs"></div>
+    <div id="toast" class="abs">
+      <div class="row"><span class="dot"></span><span class="ev">payment.failed</span><span class="tag">FAILED</span></div>
+      <div class="amt">₹4,999</div>
+      <div class="why">payment risk check failed</div>
+    </div>
+    <div id="hook" class="abs">
+      <span class="mask"><span class="h1 l" id="hl1">Failed payments,</span></span>
+      <span class="mask"><span class="h1 l2" id="hl2"><em>recovered</em> while you sleep.</span></span>
+    </div>
+  </div>
+
+  <!-- ============ SCENE 2: FIVE AGENTS ============ -->
+  <div id="s2" class="scene clip" data-start="3.7" data-duration="6.5" data-track-index="1">
+    <div id="s2head" class="abs">
+      <div class="eyebrow" id="s2eye">How it works</div>
+      <h2 class="h1" id="s2h">From failed to fixed<br/>in five steps</h2>
+    </div>
+    <div id="cards" class="abs"></div>
+    <div id="packet" class="abs">₹4,999</div>
+    <div id="band5" class="abs"><b>5</b> agents on every case</div>
+  </div>
+
+  <!-- ============ SCENE 3: GATE ============ -->
+  <div id="s3" class="scene clip" data-start="10.0" data-duration="6.1" data-track-index="1">
+    <div id="s3head" class="abs">
+      <span class="mask"><span class="h1" id="h3a">The AI proposes.</span></span>
+      <span class="mask"><span class="h1 l2" id="h3b">The rules <em>decide.</em></span></span>
+    </div>
+    <div id="log" class="abs">
+      <div class="hd">Activity · run log</div>
+      <div class="ln" id="L1"><span class="pt" style="background:var(--sky)"></span><span>payment.failed</span><span class="chip">₹4,999 payment risk check failed</span></div>
+      <div class="ln" id="L2"><span class="pt" style="background:var(--lilac)"></span><span>get customer payment history</span><span class="chip ok">local 13ms</span></div>
+      <div class="ln" id="L3"><span class="pt" style="background:var(--lilac)"></span><span>get similar resolved cases</span><span class="chip ok">local 29ms</span></div>
+      <div class="ln" id="L4"><span class="pt" style="background:var(--lilac)"></span><span>propose</span><span class="chip">retry now 66%</span></div>
+      <div class="ln" id="L5"><span class="pt" style="background:var(--coral)"></span><span>gate clamp</span><span class="chip bad">risk hold</span></div>
+      <div class="ln" id="L6"><span class="pt" style="background:var(--lemon)"></span><span>case closed</span><span class="chip warn">escalated</span></div>
+    </div>
+    <div id="verdict" class="abs">
+      <span class="vt">Gate blocked it</span>
+      <div class="res" id="vr">The rules sent it to <em>a person</em> instead.</div>
+    </div>
+    <div id="flash" class="abs"></div>
+  </div>
+
+  <!-- ============ SCENE 4: RULES ============ -->
+  <div id="s4" class="scene clip" data-start="15.82" data-duration="2.98" data-track-index="1">
+    <div id="nine" class="abs">9</div>
+    <div id="nine2" class="abs">hard limits,<br/><span>always on</span></div>
+    <div id="rules" class="abs"></div>
+  </div>
+
+  <!-- ============ SCENE 5: PRODUCT + WORDMARK ============ -->
+  <div id="s5" class="scene clip" data-start="18.55" data-duration="5.65" data-track-index="1">
+    <div id="shotwrap" class="abs">
+      <div id="shot">
+        <img src="assets/img/workspace.jpg" alt="Recovery OPS agent workspace (recorded replay)" />
+        <div id="spot" class="abs"></div>
+      </div>
+    </div>
+    <div id="recpill" class="abs"><span class="v" id="recv">₹0</span><span class="k">Recovered</span></div>
+    <div id="cap" class="abs">Recovery OPS agent workspace · recorded replay</div>
+    <div id="dim" class="abs"></div>
+    <div id="mark" class="abs"><span class="sq" id="sq"></span><span class="nm" id="nm">Recovery OPS</span></div>
+    <div id="tag" class="abs"><em>Failed payments,</em> recovered while you sleep.</div>
+    <div id="cta" class="abs"><span class="btn" id="btn">Watch the live demo</span><span class="gh" id="gh">github.com/Mithurn/Recovery-OPS</span></div>
+  </div>
+
+  <div id="vig"></div>
+
+  <!-- ============ AUDIO ============ -->
+  <audio id="music" data-start="0" data-duration="24.2" data-track-index="10" data-volume="0.62" data-fade-in="0.4" data-fade-out="1.9" src="assets/music/happy-beats-business-moves-vol-10-by-ende-dot-app.mp3"></audio>
+  <audio id="sfx0" data-start="0.12" data-duration="0.51" data-track-index="20" data-volume="0.5" src="assets/sfx/error_005.ogg"></audio>
+  <audio id="sfx1" data-start="1.15" data-duration="0.02" data-track-index="21" data-volume="0.3" src="assets/sfx/click_003.ogg"></audio>
+  <audio id="sfx2" data-start="1.7" data-duration="0.02" data-track-index="22" data-volume="0.3" src="assets/sfx/click_003.ogg"></audio>
+  <audio id="sfx3" data-start="3.7" data-duration="0.19" data-track-index="23" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+  <audio id="sfx4" data-start="4.64" data-duration="0.05" data-track-index="24" data-volume="0.5" src="assets/sfx/select_008.ogg"></audio>
+  <audio id="sfx5" data-start="5.74" data-duration="0.05" data-track-index="25" data-volume="0.5" src="assets/sfx/select_008.ogg"></audio>
+  <audio id="sfx6" data-start="6.82" data-duration="0.05" data-track-index="26" data-volume="0.5" src="assets/sfx/select_008.ogg"></audio>
+  <audio id="sfx7" data-start="7.79" data-duration="0.05" data-track-index="27" data-volume="0.5" src="assets/sfx/select_008.ogg"></audio>
+  <audio id="sfx8" data-start="8.73" data-duration="0.05" data-track-index="28" data-volume="0.5" src="assets/sfx/select_008.ogg"></audio>
+  <audio id="sfx9" data-start="10.0" data-duration="0.19" data-track-index="29" data-volume="0.45" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+  <audio id="sfx10" data-start="10.93" data-duration="0.02" data-track-index="30" data-volume="0.45" src="assets/sfx/click_002.ogg"></audio>
+  <audio id="sfx11" data-start="11.47" data-duration="0.02" data-track-index="31" data-volume="0.45" src="assets/sfx/click_002.ogg"></audio>
+  <audio id="sfx12" data-start="12.02" data-duration="0.02" data-track-index="32" data-volume="0.45" src="assets/sfx/click_002.ogg"></audio>
+  <audio id="sfx13" data-start="12.56" data-duration="0.02" data-track-index="33" data-volume="0.45" src="assets/sfx/click_002.ogg"></audio>
+  <audio id="sfx14" data-start="13.11" data-duration="0.55" data-track-index="34" data-volume="0.95" src="assets/sfx/impactSoft_heavy_003.ogg"></audio>
+  <audio id="sfx15" data-start="13.64" data-duration="0.02" data-track-index="35" data-volume="0.5" src="assets/sfx/click_002.ogg"></audio>
+  <audio id="sfx16" data-start="13.35" data-duration="0.13" data-track-index="36" data-volume="0.4" src="assets/sfx/bong_001.ogg"></audio>
+  <audio id="sfx17" data-start="15.82" data-duration="0.19" data-track-index="37" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+  <audio id="sfx18" data-start="16.0" data-duration="0.61" data-track-index="38" data-volume="0.35" src="assets/sfx/card-slide-1.ogg"></audio>
+  <audio id="sfx19" data-start="18.55" data-duration="0.55" data-track-index="39" data-volume="0.7" src="assets/sfx/impactSoft_heavy_003.ogg"></audio>
+  <audio id="sfx20" data-start="19.7" data-duration="0.62" data-track-index="40" data-volume="0.4" src="assets/sfx/switch_007.ogg"></audio>
+  <audio id="sfx21" data-start="20.74" data-duration="1.49" data-track-index="41" data-volume="0.85" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
+  <audio id="sfx22" data-start="21.15" data-duration="0.02" data-track-index="42" data-volume="0.3" src="assets/sfx/click_003.ogg"></audio>
+</div>
+
+<script>
+const AR = {"fps":30,"bass":[0.855,0.803,0.753,0.76,0.751,0.737,0.747,0.648,0.418,0.188,0.054,0.01,0.001,0.0,0.012,0.19,0.575,0.829,0.829,0.8,0.779,0.741,0.737,0.665,0.456,0.216,0.062,0.1,0.35,0.622,0.735,0.704,0.546,0.299,0.113,0.096,0.292,0.443,0.289,0.136,0.252,0.465,0.574,0.591,0.527,0.339,0.136,0.112,0.398,0.709,0.697,0.61,0.57,0.399,0.172,0.068,0.26,0.635,0.805,0.783,0.751,0.719,0.7,0.688,0.69,0.694,0.684,0.686,0.689,0.674,0.657,0.624,0.477,0.22,0.049,0.008,0.001,0.0,0.0,0.0,0.188,0.539,0.693,0.689,0.676,0.642,0.616,0.601,0.558,0.381,0.142,0.024,0.044,0.26,0.58,0.719,0.716,0.717,0.569,0.238,0.048,0.129,0.242,0.165,0.065,0.229,0.541,0.668,0.64,0.618,0.508,0.271,0.079,0.253,0.625,0.669,0.55,0.517,0.472,0.357,0.186,0.214,0.488,0.665,0.688,0.688,0.677,0.672,0.619,0.557,0.612,0.652,0.597,0.56,0.535,0.511,0.522,0.531,0.496,0.404,0.244,0.089,0.021,0.009,0.005,0.039,0.239,0.575,0.786,0.806,0.772,0.733,0.665,0.609,0.5,0.275,0.092,0.021,0.092,0.336,0.578,0.685,0.699,0.569,0.298,0.101,0.139,0.335,0.37,0.195,0.158,0.338,0.48,0.498,0.478,0.394,0.218,0.08,0.101,0.364,0.663,0.708,0.651,0.574,0.363,0.133,0.06,0.239,0.538,0.66,0.644,0.638,0.63,0.616,0.61,0.709,0.841,0.814,0.743,0.727,0.697,0.544,0.264,0.063,0.008,0.003,0.001,0.0,0.0,0.0,0.0,0.228,0.657,0.806,0.741,0.736,0.745,0.738,0.726,0.639,0.397,0.138,0.023,0.044,0.239,0.5,0.593,0.588,0.579,0.435,0.184,0.058,0.248,0.611,0.751,0.628,0.542,0.638,0.707,0.682,0.658,0.563,0.35,0.128,0.274,0.707,0.862,0.809,0.786,0.68,0.422,0.153,0.209,0.519,0.655,0.63,0.621,0.593,0.456,0.245,0.219,0.479,0.72,0.783,0.806,0.8,0.786,0.764,0.698,0.634,0.466,0.203,0.048,0.01,0.002,0.001,0.033,0.316,0.71,0.808,0.762,0.736,0.725,0.72,0.68,0.578,0.346,0.118,0.026,0.117,0.382,0.618,0.689,0.663,0.557,0.335,0.148,0.151,0.294,0.344,0.232,0.254,0.466,0.594,0.629,0.624,0.474,0.243,0.108,0.198,0.504,0.73,0.745,0.732,0.666,0.447,0.215,0.158,0.345,0.6,0.692,0.692,0.695,0.676,0.652,0.639,0.667,0.711,0.701,0.691,0.697,0.683,0.655,0.583,0.4,0.167,0.041,0.011,0.002,0.0,0.0,0.0,0.213,0.607,0.755,0.728,0.739,0.747,0.748,0.695,0.519,0.26,0.08,0.023,0.074,0.32,0.608,0.677,0.658,0.619,0.407,0.148,0.042,0.084,0.13,0.077,0.036,0.236,0.582,0.712,0.676,0.623,0.458,0.21,0.066,0.291,0.724,0.872,0.832,0.826,0.748,0.517,0.222,0.217,0.511,0.678,0.674,0.674,0.673,0.624,0.47,0.376,0.516,0.71,0.777,0.755,0.737,0.704,0.677,0.674,0.545,0.293,0.097,0.019,0.003,0.0,0.0,0.072,0.348,0.69,0.813,0.808,0.813,0.767,0.737,0.718,0.538,0.254,0.075,0.025,0.185,0.543,0.759,0.772,0.729,0.577,0.324,0.121,0.095,0.222,0.281,0.173,0.248,0.584,0.771,0.78,0.706,0.469,0.204,0.078,0.206,0.555,0.769,0.751,0.698,0.557,0.309,0.157,0.19,0.411,0.694,0.818,0.81,0.792,0.793,0.791,0.739,0.749,0.85,0.861,0.813,0.803,0.806,0.724,0.463,0.172,0.032,0.005,0.001,0.0,0.0,0.0,0.0,0.251,0.704,0.844,0.773,0.765,0.767,0.77,0.758,0.65,0.388,0.129,0.021,0.077,0.323,0.57,0.602,0.583,0.581,0.418,0.174,0.063,0.181,0.314,0.196,0.113,0.348,0.673,0.801,0.792,0.739,0.536,0.231,0.061,0.282,0.711,0.838,0.785,0.789,0.683,0.404,0.133,0.185,0.519,0.721,0.743,0.752,0.761,0.759,0.744,0.797,0.931,0.97,0.907,0.866,0.841,0.81,0.766,0.66,0.456,0.2,0.043,0.006,0.001,0.0,0.0,0.134,0.518,0.838,0.856,0.791,0.734,0.687,0.707,0.657,0.427,0.17,0.039,0.009,0.188,0.582,0.809,0.844,0.917,0.832,0.478,0.184,0.147,0.246,0.243,0.116,0.146,0.428,0.678,0.736,0.708,0.58,0.306,0.077,0.241,0.646,0.769,0.726,0.705,0.563,0.315,0.106,0.057,0.275,0.633,0.788,0.769,0.75,0.739,0.731,0.733,0.802,0.883,0.848,0.774,0.753,0.751,0.754,0.725,0.551,0.257,0.057,0.005,0.0,0.0,0.0,0.014,0.279,0.697,0.798,0.751,0.791,0.804,0.782,0.721,0.529,0.242,0.057,0.008,0.077,0.349,0.66,0.767,0.82,0.88,0.682,0.321,0.142,0.213,0.286,0.168,0.094,0.266,0.505,0.602,0.605,0.567,0.408,0.183,0.107,0.383,0.754,0.85,0.826,0.806,0.701,0.444,0.164,0.212,0.503,0.619,0.588,0.581,0.588,0.592,0.584,0.685,0.825,0.731,0.574,0.56,0.551,0.532,0.532,0.505,0.416,0.239,0.078,0.021,0.011,0.008,0.005,0.177,0.6,0.895,0.92,0.898,0.867,0.825,0.812,0.792,0.668,0.392,0.129,0.025,0.179,0.502,0.637,0.613,0.717,0.74,0.435,0.147,0.145,0.285,0.288,0.129,0.096,0.285,0.481,0.525,0.444,0.266,0.09,0.021,0.26,0.674,0.755,0.669,0.648,0.526,0.297,0.104,0.078,0.278,0.547,0.648,0.637,0.633,0.637,0.638,0.555,0.395],"rms":[0.97,0.881,0.795,0.781,0.776,0.764,0.77,0.705,0.51,0.257,0.079,0.016,0.002,0.0,0.063,0.299,0.65,0.858,0.835,0.784,0.769,0.741,0.727,0.678,0.549,0.336,0.128,0.177,0.485,0.702,0.712,0.654,0.566,0.376,0.145,0.144,0.399,0.515,0.355,0.283,0.447,0.584,0.58,0.545,0.473,0.312,0.132,0.199,0.569,0.804,0.753,0.684,0.611,0.423,0.218,0.222,0.473,0.711,0.765,0.734,0.707,0.686,0.67,0.663,0.693,0.744,0.744,0.709,0.678,0.654,0.643,0.611,0.538,0.442,0.318,0.171,0.066,0.023,0.008,0.001,0.2,0.649,0.914,0.876,0.794,0.743,0.701,0.669,0.63,0.535,0.36,0.172,0.169,0.42,0.659,0.718,0.72,0.709,0.536,0.238,0.106,0.187,0.254,0.188,0.199,0.467,0.735,0.784,0.724,0.646,0.498,0.275,0.166,0.379,0.722,0.842,0.774,0.699,0.625,0.497,0.336,0.358,0.614,0.792,0.807,0.803,0.793,0.757,0.666,0.595,0.677,0.728,0.627,0.549,0.524,0.501,0.496,0.521,0.544,0.473,0.288,0.115,0.036,0.012,0.003,0.087,0.366,0.691,0.857,0.871,0.832,0.757,0.645,0.579,0.541,0.431,0.256,0.109,0.17,0.46,0.676,0.7,0.664,0.591,0.407,0.167,0.147,0.367,0.428,0.241,0.213,0.453,0.617,0.583,0.517,0.425,0.253,0.096,0.192,0.547,0.759,0.723,0.648,0.542,0.343,0.13,0.143,0.428,0.666,0.713,0.695,0.668,0.639,0.622,0.648,0.773,0.89,0.854,0.775,0.748,0.696,0.523,0.319,0.272,0.3,0.225,0.099,0.033,0.012,0.002,0.0,0.229,0.707,0.926,0.837,0.779,0.785,0.785,0.768,0.705,0.551,0.326,0.136,0.144,0.387,0.619,0.685,0.722,0.763,0.608,0.283,0.186,0.435,0.707,0.776,0.726,0.73,0.784,0.776,0.73,0.693,0.605,0.421,0.227,0.315,0.683,0.887,0.858,0.8,0.708,0.527,0.344,0.386,0.63,0.797,0.822,0.805,0.743,0.57,0.362,0.372,0.648,0.881,0.936,0.919,0.857,0.811,0.791,0.744,0.68,0.527,0.312,0.159,0.078,0.042,0.028,0.176,0.573,0.872,0.9,0.848,0.786,0.765,0.765,0.721,0.633,0.45,0.228,0.107,0.204,0.507,0.762,0.829,0.805,0.742,0.568,0.323,0.219,0.303,0.367,0.317,0.361,0.55,0.654,0.65,0.624,0.493,0.295,0.192,0.329,0.666,0.871,0.845,0.782,0.696,0.549,0.399,0.372,0.545,0.747,0.807,0.788,0.76,0.722,0.686,0.696,0.77,0.825,0.83,0.836,0.826,0.794,0.749,0.667,0.547,0.412,0.254,0.113,0.045,0.021,0.007,0.046,0.322,0.758,0.961,0.934,0.884,0.831,0.778,0.696,0.556,0.391,0.236,0.119,0.19,0.495,0.741,0.791,0.812,0.83,0.659,0.331,0.139,0.147,0.167,0.109,0.164,0.468,0.765,0.86,0.851,0.781,0.606,0.427,0.423,0.634,0.884,0.954,0.902,0.851,0.77,0.594,0.411,0.441,0.662,0.838,0.896,0.887,0.858,0.804,0.671,0.594,0.719,0.869,0.89,0.847,0.791,0.708,0.661,0.668,0.62,0.444,0.208,0.063,0.024,0.014,0.005,0.158,0.549,0.875,0.964,0.942,0.887,0.802,0.748,0.695,0.559,0.369,0.191,0.11,0.251,0.602,0.858,0.881,0.833,0.71,0.459,0.213,0.177,0.329,0.366,0.259,0.345,0.624,0.769,0.759,0.68,0.468,0.224,0.134,0.311,0.682,0.911,0.885,0.775,0.605,0.426,0.351,0.42,0.622,0.794,0.826,0.794,0.768,0.764,0.759,0.76,0.817,0.871,0.873,0.86,0.838,0.807,0.72,0.539,0.39,0.31,0.192,0.074,0.028,0.014,0.004,0.064,0.368,0.783,0.919,0.841,0.791,0.766,0.749,0.736,0.669,0.498,0.279,0.12,0.172,0.452,0.678,0.719,0.747,0.794,0.628,0.284,0.138,0.246,0.306,0.195,0.21,0.516,0.797,0.866,0.842,0.764,0.596,0.416,0.395,0.59,0.802,0.867,0.875,0.869,0.747,0.52,0.349,0.403,0.643,0.818,0.851,0.845,0.843,0.837,0.812,0.841,0.944,0.973,0.918,0.869,0.824,0.79,0.754,0.663,0.469,0.205,0.036,0.0,0.0,0.0,0.0,0.198,0.647,0.902,0.842,0.75,0.702,0.672,0.665,0.615,0.451,0.221,0.051,0.037,0.235,0.568,0.772,0.808,0.854,0.837,0.618,0.343,0.239,0.296,0.272,0.118,0.149,0.449,0.683,0.721,0.677,0.554,0.325,0.148,0.311,0.691,0.86,0.802,0.706,0.559,0.332,0.118,0.138,0.441,0.708,0.762,0.739,0.726,0.719,0.711,0.753,0.846,0.863,0.816,0.803,0.8,0.781,0.763,0.711,0.539,0.267,0.065,0.003,0.0,0.0,0.0,0.161,0.572,0.883,0.897,0.834,0.82,0.807,0.779,0.715,0.53,0.253,0.058,0.003,0.125,0.446,0.702,0.753,0.807,0.93,0.832,0.48,0.259,0.267,0.267,0.146,0.136,0.383,0.624,0.689,0.676,0.621,0.466,0.269,0.301,0.635,0.893,0.899,0.851,0.832,0.75,0.52,0.287,0.316,0.525,0.631,0.619,0.604,0.608,0.614,0.636,0.753,0.875,0.802,0.665,0.62,0.576,0.541,0.538,0.502,0.412,0.246,0.077,0.007,0.0,0.0,0.0,0.21,0.671,0.942,0.925,0.863,0.822,0.795,0.775,0.746,0.645,0.399,0.13,0.074,0.261,0.502,0.606,0.666,0.837,0.85,0.572,0.306,0.233,0.276,0.242,0.105,0.126,0.373,0.556,0.563,0.491,0.333,0.141,0.111,0.396,0.769,0.852,0.752,0.669,0.535,0.324,0.12,0.124,0.396,0.654,0.721,0.707,0.701,0.71,0.716,0.719,0.729]};
+const AGENTS = [
+  {id:"intake",role:"Intake",ac:"#4f9faf",title:"Spots the failure",txt:"Picks up the failed payment from Razorpay and opens a case.",hair:"#3a2a22",skin:"#e8b890"},
+  {id:"investigator",role:"Investigator",ac:"#9482d3",title:"Finds the cause",txt:"Checks history, bank downtime and similar cases, then picks a fix.",hair:"#2a2230",skin:"#d9a67c"},
+  {id:"gate",role:"Safety Gate",ac:"#d96a62",title:"Checks the limits",txt:"Nine fixed rules approve, block or hold every proposal.",hair:"#4a2a1c",skin:"#c68e66"},
+  {id:"executor",role:"Executor",ac:"#5ca97a",title:"Acts once",txt:"Retries or sends a link, once, with no risk of a double charge.",hair:"#6a4a2a",skin:"#efc9a2"},
+  {id:"ledger",role:"Audit Log",ac:"#dcab3c",title:"Writes it down",txt:"Every step is saved to a log nobody can edit.",hair:"#2c2c34",skin:"#e0b088"}
+];
+const RULES = [
+  ["Risk holds","always go to a person","#d96a62"],
+  ["Expired cards","never retried automatically","#9482d3"],
+  ["Four attempts","then it stops","#4f9faf"],
+  ["₹5,000 cap","per case","#dcab3c"],
+  ["Low confidence","escalates","#9482d3"],
+  ["Cooldowns","6 hours between charges","#5ca97a"],
+  ["Contact hours","8:00 to 19:00 IST","#4f9faf"],
+  ["Write offs","need a person","#d96a62"]
+];
+const ROWS = [
+ "...hhhhhh...","..hhhhhhhh..","..hhhhhhhh..","..hssssssh..","..ssessess..","..ssssssss..","...ssmmss...","....ssss....","..cccccccc..",".cccccccccc.",".cccccccccc.",".cccccccccc."
+];
+function avatar(a){
+  const P=14, W=12*P, H=12*P+48; let r="";
+  const col={h:a.hair,s:a.skin,e:"#17181b",m:"#9a5a4a",c:a.ac};
+  ROWS.forEach((row,y)=>{[...row].forEach((ch,x)=>{ if(ch==="."||!col[ch]) return; r+=`<rect x="${x*P}" y="${y*P}" width="${P}" height="${P}" fill="${col[ch]}"/>`; });});
+  // desk
+  const desk=`<rect x="-34" y="${12*P-6}" width="${W+68}" height="54" rx="8" fill="#24262b" stroke="#34363d" stroke-width="3"/><rect x="${W/2-30}" y="${12*P+8}" width="60" height="16" rx="4" fill="${a.ac}" opacity=".55"/>`;
+  return `<svg width="${W+68}" height="${H}" viewBox="-34 0 ${W+68} ${H}" shape-rendering="crispEdges"><g class="av">${r}</g>${desk}</svg>`;
+}
+// build cards
+const cards=document.getElementById("cards");
+AGENTS.forEach((a,i)=>{
+  const d=document.createElement("div"); d.className="card"; d.id="c"+i; d.style.left=(i*344)+"px"; d.style.setProperty("--ac",a.ac);
+  d.innerHTML=`<div class="bar"></div><div class="no">0${i+1}</div><div class="desk">${avatar(a)}</div><div class="role">${a.role}</div><div class="title">${a.title}</div>`;
+  cards.appendChild(d);
+});
+// build rules
+const rules=document.getElementById("rules");
+RULES.forEach((r,i)=>{ const d=document.createElement("div"); d.className="rule"; d.id="r"+i; d.innerHTML=`<i style="background:${r[2]}"></i><b>${r[0]}</b><span>${r[1]}</span>`; rules.appendChild(d); });
+
+const tl = gsap.timeline({ paused:true });
+const E="expo.out", P4="power4.out", P3="power3.out", IO="power2.inOut";
+
+/* ---------- audio-reactive aura (subtle, bass+rms, 10Hz keyframes) ---------- */
+for(let t=0;t<24.2;t+=0.1){
+  const i=Math.min(AR.bass.length-1,Math.round(t*AR.fps));
+  const v=0.26+0.20*AR.bass[i]+0.08*AR.rms[i];
+  tl.to("#aura",{opacity:v,duration:0.1,ease:"none"},t);
+}
+tl.fromTo("#aura",{scale:1},{scale:1.12,duration:24.2,ease:"none"},0);
+
+/* ---------- S1: failure (0–4.0) ---------- */
+tl.set("#s1",{opacity:1},0);
+tl.fromTo("#toast",{y:50,scale:.94,opacity:1},{y:0,scale:1,opacity:1,duration:.55,ease:E},0);
+tl.fromTo("#redglow",{opacity:0,scale:.7},{opacity:1,scale:1,duration:.5,ease:P3},.12);
+// shake on impact
+[[.62,-14],[.70,12],[.78,-8],[.86,5],[.94,0]].forEach(([t,x])=>tl.to("#toast",{x,duration:.07,ease:"none"},t-.5+.12));
+tl.to("#toast .dot",{scale:1.35,duration:.25,yoyo:true,repeat:3,ease:"sine.inOut"},.4);
+// toast shrinks up, hook text lands
+tl.to("#toast",{y:-150,scale:.5,opacity:.55,duration:.7,ease:IO},1.05);
+tl.to("#redglow",{opacity:.35,y:-120,duration:.7,ease:IO},1.05);
+tl.fromTo("#hl1",{y:170,opacity:0},{y:0,opacity:1,duration:.65,ease:E},1.15);
+tl.fromTo("#hl2",{y:170,opacity:0},{y:0,opacity:1,duration:.65,ease:E},1.7);
+tl.to("#s1",{opacity:0,duration:.35,ease:"power1.in"},3.65);
+tl.to("#hook",{scale:1.04,duration:2.6,ease:"none"},1.15);
+
+/* ---------- S2: five agents (3.7–10.0, local = t-3.7) ---------- */
+tl.fromTo("#s2",{opacity:0},{opacity:1,duration:.4,ease:"power1.out"},3.7);
+tl.fromTo("#s2eye",{opacity:0,x:-30},{opacity:1,x:0,duration:.5,ease:P4},3.85);
+tl.fromTo("#s2h",{opacity:0,y:50},{opacity:1,y:0,duration:.7,ease:E},3.95);
+const ACT=[4.64,5.74,6.82,7.79,8.73];   // beat-grid: consecutive/every-other beats
+const CX=i=>113+i*344+159;
+tl.set(".card",{opacity:.38,y:40},0);
+tl.set("#packet",{x:CX(0)-72,y:408-34,opacity:0,scale:.6},0);
+tl.to(".card",{y:0,opacity:.42,duration:.6,stagger:.06,ease:P4},4.2);
+tl.to("#packet",{opacity:1,scale:1,duration:.4,ease:"back.out(2)"},4.25);
+ACT.forEach((t,i)=>{
+  const ac=AGENTS[i].ac;
+  tl.to("#c"+i,{opacity:1,overwrite:"auto",borderColor:ac,boxShadow:"0 0 0 1px "+ac+", 0 30px 90px rgba(0,0,0,.5), 0 0 70px "+ac+"55",duration:.35,ease:P3},t);
+  tl.to("#c"+i+" .bar",{opacity:1,duration:.3},t);
+  tl.fromTo("#c"+i+" .av",{y:0},{y:-12,duration:.2,yoyo:true,repeat:1,ease:"sine.inOut"},t);
+  if(i<4) tl.to("#packet",{x:CX(i+1)-72,duration:Math.min(.95,ACT[i+1]-t-.05),ease:"power3.inOut"},t+.12);
+});
+tl.fromTo("#band5",{opacity:0,y:20},{opacity:1,y:0,duration:.5,ease:P4},7.9);
+tl.to("#packet",{scale:1.15,duration:.3,ease:"sine.inOut"},8.8);
+tl.to("#s2",{opacity:0,duration:.3,ease:"power1.in"},9.9);
+
+/* ---------- S3: the gate (9.8–16.1) ---------- */
+tl.fromTo("#s3",{opacity:0},{opacity:1,duration:.3,ease:"power1.out"},10.0);
+tl.fromTo("#h3a",{y:140,opacity:0},{y:0,opacity:1,duration:.65,ease:E},10.0);
+tl.fromTo("#h3b",{y:140,opacity:0},{y:0,opacity:1,duration:.65,ease:E},10.4);
+tl.fromTo("#log",{opacity:0,y:50},{opacity:1,y:0,duration:.6,ease:P4},10.5);
+const LT=[10.93,11.47,12.02,12.56,13.11,13.64];  // beat-grid log lines
+LT.forEach((t,i)=>{ tl.fromTo("#L"+(i+1),{opacity:0,x:-40},{opacity:1,x:0,duration:.4,ease:P4},t); });
+// the pause before the gate: propose line pulses
+tl.to("#L4 .chip",{color:"#f2f3f5",duration:.25,yoyo:true,repeat:1},12.65);
+// gate clamp impact @13.11 (beat-grid)
+tl.to("#flash",{opacity:.22,duration:.05,ease:"none"},13.11);
+tl.to("#flash",{opacity:0,duration:.35,ease:"power2.out"},13.16);
+tl.fromTo("#L5",{backgroundColor:"rgba(217,106,98,.28)"},{backgroundColor:"rgba(217,106,98,0)",duration:1.1,ease:"power2.out"},13.11);
+tl.fromTo("#verdict",{opacity:0,x:120,scale:.94},{opacity:1,x:0,scale:1,duration:.55,ease:E},13.11);
+tl.fromTo("#vr",{opacity:0,y:20},{opacity:1,y:0,duration:.5,ease:P4},13.35);
+// camera shake on impact
+[[13.11,-10],[13.17,9],[13.23,-6],[13.29,3],[13.35,0]].forEach(([t,x])=>tl.to("#s3",{x,duration:.06,ease:"none"},t));
+tl.to("#s3",{opacity:0,duration:.18,ease:"power1.in"},15.78);
+
+/* ---------- S4: nine hard limits (15.82–18.8) ---------- */
+tl.fromTo("#s4",{opacity:0},{opacity:1,duration:.25,ease:"power1.out"},15.82);
+tl.fromTo("#nine",{y:160,opacity:0,scale:.9},{y:0,opacity:1,scale:1,duration:.7,ease:E},15.82);
+tl.fromTo("#nine2",{x:-40,opacity:0},{x:0,opacity:1,duration:.55,ease:P4},16.15);
+tl.fromTo(".rule",{opacity:0,y:50,scale:.94},{opacity:1,y:0,scale:1,duration:.45,stagger:.1,ease:P4},16.0);
+tl.to("#nine",{scale:1.04,duration:2.2,ease:"none"},16.55);
+tl.to("#s4",{opacity:0,duration:.3,ease:"power1.in"},18.5);
+
+/* ---------- S5: product + wordmark (18.55–23.5) ---------- */
+tl.fromTo("#s5",{opacity:0},{opacity:1,duration:.25,ease:"power1.out"},18.55);
+tl.fromTo("#shot",{y:140,opacity:0,rotateX:14,scale:.92},{y:0,opacity:1,rotateX:4,scale:1,duration:.9,ease:E},18.55);
+tl.to("#shot",{rotateX:0,scale:1.04,duration:2.2,ease:"none"},19.45);
+tl.fromTo("#cap",{opacity:0},{opacity:1,duration:.4},18.8);
+// spotlight on recovered stat
+tl.fromTo("#spot",{opacity:0,scale:1.25},{opacity:1,scale:1,duration:.4,ease:P4},19.64);
+tl.fromTo("#recpill",{opacity:0,y:60,scale:.8},{opacity:1,y:0,scale:1,duration:.55,ease:"back.out(1.6)"},19.7);
+const cnt={v:0};
+tl.to(cnt,{v:6096,duration:.9,ease:"power2.out",onUpdate(){document.getElementById("recv").textContent="₹"+Math.round(cnt.v).toLocaleString("en-IN");}},19.74);
+// strong cue 20.74: wordmark
+tl.to("#dim",{opacity:.9,duration:.35,ease:"power2.out"},20.64);
+tl.to(["#recpill","#cap","#spot"],{opacity:0,duration:.25},20.64);
+tl.to("#shotwrap",{scale:1.08,filter:"blur(14px)",duration:1.4,ease:"none"},20.64);
+tl.fromTo("#sq",{scale:0,rotate:-90},{scale:1,rotate:0,duration:.6,ease:"back.out(2)"},20.74);
+tl.fromTo("#nm",{opacity:0,x:-50,scale:.96},{opacity:1,x:0,scale:1,duration:.7,ease:E},20.82);
+tl.fromTo("#tag",{opacity:0,y:34},{opacity:1,y:0,duration:.6,ease:P4},21.15);
+tl.fromTo("#cta",{opacity:0,y:34},{opacity:1,y:0,duration:.6,ease:P4},21.5);
+tl.to("#mark .sq",{boxShadow:"20px 20px 0 0 #4f9faf, 0 0 80px rgba(79,159,175,.55)",duration:.8,yoyo:true,repeat:1,ease:"sine.inOut"},21.0);
+tl.to("#s5",{opacity:0,duration:.5,ease:"power1.in"},23.7);
+
+window.__timelines = window.__timelines || {};
+window.__timelines["main"] = tl;
+tl.seek(0);
+</script>
+</body>
+</html>
