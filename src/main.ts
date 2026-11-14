@@ -5,6 +5,7 @@ import fastifyStatic from "@fastify/static";
 import { Redis } from "ioredis";
 import { loadConfig } from "./config.js";
 import { createPool } from "./persistence/pool.js";
+import { PostgresSpendRepository } from "./persistence/spend-repository.js";
 import { PostgresCaseRepository } from "./persistence/case-repository.js";
 import { LanePublishingCaseRepository } from "./persistence/lane-publishing-case-repository.js";
 import { PostgresAttemptRepository } from "./persistence/attempt-repository.js";
@@ -64,6 +65,13 @@ const runtimes = new TenantRuntimes({
     openRouterApiKey: config.OPENROUTER_API_KEY,
     googleApiKey: config.GOOGLE_GENERATIVE_AI_API_KEY,
   }),
+  fallbackModel: config.AGENT_FALLBACK_MODEL
+    ? resolveModel(config.AGENT_FALLBACK_MODEL, {
+        openRouterApiKey: config.OPENROUTER_API_KEY,
+        googleApiKey: config.GOOGLE_GENERATIVE_AI_API_KEY,
+      })
+    : undefined,
+  spend: { store: new PostgresSpendRepository(pool) },
   modelId: config.AGENT_MODEL,
   agent: { stepBudget: config.AGENT_STEP_BUDGET, deadlineMs: config.AGENT_TIMEOUT_MS },
   budget: {
@@ -170,6 +178,7 @@ const shutdown = createShutdown({
     { name: "sweep", run: () => sweep.stop() },
     { name: "http", run: () => app.close() },
     { name: "worker", run: () => worker.close() },
+    { name: "spend", run: () => runtimes.flushSpend() },
     { name: "queue", run: () => queue.close() },
     { name: "redis", run: () => Promise.all([redis.quit(), (connection as Redis).quit()]) },
     { name: "pool", run: () => pool.end() },

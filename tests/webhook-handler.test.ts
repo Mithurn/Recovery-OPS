@@ -48,7 +48,7 @@ const kase = (over: Partial<RecoveryCase> = {}): RecoveryCase => ({
   ...over,
 });
 
-function setup(opts: { fresh?: boolean; attempts?: Record<string, Attempt>; existing?: RecoveryCase | null; caseById?: RecoveryCase | null } = {}) {
+function setup(opts: { fresh?: boolean; attempts?: Record<string, Attempt>; existing?: RecoveryCase | null; caseById?: RecoveryCase | null; createResult?: RecoveryCase } = {}) {
   const recordIfNew = vi.fn(async () => opts.fresh ?? true);
   const created: NewCase[] = [];
   const enqueue = vi.fn(async () => undefined);
@@ -63,7 +63,7 @@ function setup(opts: { fresh?: boolean; attempts?: Record<string, Attempt>; exis
       byId: async () => opts.caseById ?? null,
       create: async (c: NewCase) => {
         created.push(c);
-        return { ...kase(), id: c.id, lane: "INCOMING" };
+        return opts.createResult ?? { ...kase(), id: c.id, lane: "INCOMING" };
       },
       moveLane,
     } as unknown as CaseRepository,
@@ -118,6 +118,19 @@ describe("WebhookHandler ingestion", () => {
     const { handler, enqueue } = setup({ fresh: false, existing: kase({ lane: "INCOMING" }) });
     expect((await send(handler, failed())).status).toBe("duplicate");
     expect(enqueue).toHaveBeenCalledWith("c1");
+  });
+
+  it("treats a create that returns another case as the already-ingested branch", async () => {
+    const { handler, enqueue } = setup({ createResult: kase({ id: "winner", lane: "INCOMING" }) });
+    const res = await send(handler, failed());
+    expect(res).toEqual({ status: "ingested", caseId: "winner" });
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    expect(enqueue).toHaveBeenCalledWith("winner");
+  });
+
+  it("reports a conflicting create on a redelivery as duplicate", async () => {
+    const { handler } = setup({ fresh: false, createResult: kase({ id: "winner", lane: "ESCALATED" }) });
+    expect((await send(handler, failed())).status).toBe("duplicate");
   });
 
   it("uses the payment's own created_at as failedAt", async () => {

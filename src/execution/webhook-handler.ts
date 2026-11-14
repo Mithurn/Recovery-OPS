@@ -194,13 +194,18 @@ export class WebhookHandler {
     if (await this.isRecoveryPayment(payment)) return { status: "ignored", event: parsed.event };
 
     const existing = await this.deps.cases.byOriginalPaymentId(payment.id);
-    if (existing) {
-      if (existing.lane === "INCOMING") await this.deps.enqueuer.enqueue(existing.id);
-      return fresh ? { status: "ingested", caseId: existing.id } : { status: "duplicate" };
-    }
-    const kase = await this.deps.cases.create(caseFromFailedPayment(payment, this.deps.merchantRef));
+    if (existing) return this.alreadyIngested(existing, fresh);
+
+    const draft = caseFromFailedPayment(payment, this.deps.merchantRef);
+    const kase = await this.deps.cases.create(draft);
+    if (kase.id !== draft.id) return this.alreadyIngested(kase, fresh);
     await this.deps.enqueuer.enqueue(kase.id);
     return { status: "ingested", caseId: kase.id };
+  }
+
+  private async alreadyIngested(existing: RecoveryCase, fresh: boolean): Promise<WebhookResult> {
+    if (existing.lane === "INCOMING") await this.deps.enqueuer.enqueue(existing.id);
+    return fresh ? { status: "ingested", caseId: existing.id } : { status: "duplicate" };
   }
 
   private async isRecoveryPayment(payment: z.infer<typeof paymentEntity>): Promise<boolean> {

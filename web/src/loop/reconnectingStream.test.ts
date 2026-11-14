@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { backoffDelay, runReconnectingStream } from "./reconnectingStream";
 
 async function* failing(): AsyncGenerator<never> {
+  yield* [];
   throw new Error("dropped");
 }
 

@@ -1,5 +1,7 @@
 # Recovery OPS
 
+[![CI](https://github.com/Mithurn/Recovery-OPS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mithurn/Recovery-OPS/actions/workflows/ci.yml)
+
 A multi-agent workspace that recovers failed Razorpay payments. Five agents investigate why each payment failed, propose one recovery action, and pass it through a deterministic safety gate the model cannot override. Everything is streamed live and written to an append-only audit log.
 
 ![The agent workspace](web/public/shots/workspace.jpg)
@@ -64,15 +66,28 @@ One container serves the API and the built web app. Point Razorpay webhooks at t
 
 ## Results
 
-Historical figures from an earlier evaluation: replayed from recorded model transcripts, five seeds of a 60 case synthetic corpus with known ground truth. The corpus generator, baselines, transcripts and replay harness are not in this repository, so these numbers cannot be reproduced from it.
+Reproduce with `npm run bench` (no services, no keys). It generates a seeded synthetic corpus of failed payments with known ground truth, runs three arms through the real `safetyGate`, and prints this table:
 
-| Strategy | Recovery rate (mean) |
-| --- | --- |
-| Agent behind the gate | 56.0% |
-| Hand tuned rules table | 59.3% |
-| Fixed retry schedule | 35.7% |
+| Arm | Recovery rate (mean) | Std dev | Range over seeds | Root-cause accuracy | Gate intervened |
+| --- | --- | --- | --- | --- | --- |
+| Fixed retry schedule | 45.7% | 2.8% | 43.3% to 50.0% | n/a | 28.7% |
+| Hand-tuned rules table | 53.7% | 3.6% | 51.7% to 60.0% | 100.0% | 13.0% |
+| Agent behind gate (SCRIPTED STAND-IN, not an LLM) | 55.3% | 4.8% | 48.3% to 61.7% | 80.3% | 34.3% |
 
-The agent recovered far more than a fixed schedule and landed within about three points of a rules table without beating it. It named the root cause correctly 73% of the time and leaves an auditable reasoning trail.
+Five seeds, 60 cases each.
+
+**The agent row is not a language model.** The committed run replays `bench/transcripts/`, which a deterministic scripted policy (`bench/standin.ts`) generated. It reads the same signals the agent's tools expose, misdiagnoses a fixed share of cases on purpose, and its accuracy is a property of that script. What the row does measure is the pipeline around the model: the corpus, the simulator and the gate clamping unsafe proposals. It says nothing about any LLM.
+
+The earlier figures (agent 56.0%, rules table 59.3%, fixed schedule 35.7%) came from an evaluation whose harness is not in this repository. They cannot be reproduced and are superseded by the table above.
+
+```bash
+npm run bench                              # table above, 5 seeds x 60 cases
+npm run bench -- --seeds 5 --cases 60      # explicit
+npm run bench:record                       # regenerate the scripted transcripts
+OPENROUTER_API_KEY=... npm run bench -- --live --seeds 1 --cases 20   # real agent, records bench/transcripts/live-seed-N.json
+```
+
+`--live` runs the real recovery agent with its tools backed by each synthetic case (set `AGENT_MODEL` or pass `--model`; with only a Google key use `--model google/<id>`). The table then labels the arm with the model id. Method and limits are in [docs/BENCHMARK.md](docs/BENCHMARK.md).
 
 ## Security model
 
@@ -94,13 +109,14 @@ The agent recovered far more than a fixed schedule and landed within about three
 - The audit log has no hash chain, so it does not protect against a database admin.
 - The default model is a free OpenRouter model, so diagnosis quality varies.
 - Auth rate limiting is in memory and per process.
-- Evaluation harness is not published. A reproducible one needs the corpus generator with seeds, the two baselines, recorded transcripts with the model id, and an `npm run bench` that prints the table.
+- The benchmark is synthetic, scores one decision per case, and its committed agent row is a scripted stand-in. A recorded live-model run is not committed. See [docs/BENCHMARK.md](docs/BENCHMARK.md).
 
 ## Tests
 
 ```bash
 npm run test:unit     # no services needed
 npm test              # adds Postgres and Redis integration tests
+npm run bench         # reproducible recovery benchmark
 ```
 
 ## Credits

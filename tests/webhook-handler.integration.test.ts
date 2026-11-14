@@ -343,4 +343,16 @@ describe.runIf(adminUrl)("WebhookHandler", () => {
     expect(redelivery.status).toBe("duplicate");
     expect((await cases.listLive()).filter((c) => c.originalPaymentId === "pay_fail_3")).toHaveLength(1);
   });
+
+  it("collapses concurrent deliveries of one failed payment into a single case", async () => {
+    const { handler, cases } = build(new PaidOnceResolver());
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () => handler.handle(signed(failedEvent("pay_fail_race")))),
+    );
+    for (const r of results) expect(r.status).toBe("ingested");
+    const matching = (await cases.listLive()).filter((c) => c.originalPaymentId === "pay_fail_race");
+    expect(matching).toHaveLength(1);
+    caseId = matching[0]!.id;
+    expect(new Set(results.map((r) => (r as { caseId: string }).caseId))).toEqual(new Set([caseId]));
+  });
 });

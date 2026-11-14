@@ -18,6 +18,7 @@ export class LanePublishingCaseRepository implements CaseRepository {
 
   async create(newCase: NewCase): Promise<RecoveryCase> {
     const kase = await this.inner.create(newCase);
+    if (kase.id !== newCase.id) return kase;
     await this.events.append({
       caseId: kase.id,
       type: "CASE_CREATED",
