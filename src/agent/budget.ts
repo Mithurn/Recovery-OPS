@@ -12,6 +12,7 @@ export type BudgetState = {
   usdPerMInput: number;
   usdPerMOutput: number;
   usdPerCallFallback: number;
+  onChange?: () => void;
 };
 
 export type Pricing = {
@@ -70,6 +71,7 @@ function record(budget: BudgetState, usage: unknown): void {
     budget.outputTokens += output ?? 0;
   }
   settle(budget);
+  budget.onChange?.();
 }
 
 function meterStream(budget: BudgetState, stream: ReadableStream<unknown>): ReadableStream<unknown> {
@@ -116,6 +118,7 @@ export function guardModel(model: LanguageModel, budget: BudgetState): LanguageM
       );
     }
     budget.calls += 1;
+    budget.onChange?.();
   };
 
   return new Proxy(model as object, {

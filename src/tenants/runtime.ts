@@ -15,6 +15,8 @@ import { runRecoveryAgent } from "../agent/recovery-agent.js";
 import { createBudget, guardModel, type BudgetState } from "../agent/budget.js";
 import { systemClock } from "../domain/attempt.js";
 import { isHardDecline, isRiskHold } from "../domain/case.js";
+import type { SpendStore } from "../persistence/spend-repository.js";
+import { SpendPersister } from "./spend-persister.js";
 import type { CredentialStore, TenantCredentials } from "./credentials.js";
 
 export type TenantRuntimeDeps = {
@@ -26,9 +28,11 @@ export type TenantRuntimeDeps = {
   queue: Queue<RecoveryJob>;
   redis: Redis;
   baseModel: LanguageModel;
+  fallbackModel?: LanguageModel;
   modelId: string;
   agent: { stepBudget: number; deadlineMs: number };
   budget: { capUsd: number; usdPerMInput: number; usdPerMOutput: number };
+  spend?: { store: SpendStore; flushIntervalMs?: number };
 };
 
 export type TenantRuntime = {
@@ -42,16 +46,26 @@ export type TenantRuntime = {
 
 export class TenantRuntimes {
   private readonly cache = new Map<string, Promise<TenantRuntime | null>>();
-  private readonly budgets = new Map<string, BudgetState>();
+  private readonly budgets = new Map<string, Promise<BudgetState>>();
+  private readonly persister: SpendPersister | null;
 
-  constructor(private readonly deps: TenantRuntimeDeps) {}
+  constructor(private readonly deps: TenantRuntimeDeps) {
+    this.persister = deps.spend ? new SpendPersister(deps.spend.store, deps.spend.flushIntervalMs) : null;
+  }
+
+  flushSpend(): Promise<void> {
+    return this.persister?.flush() ?? Promise.resolve();
+  }
 
   forUser(userId: string): Promise<TenantRuntime | null> {
     let runtime = this.cache.get(userId);
     if (!runtime) {
       runtime = this.deps.credentials.forUser(userId).then((creds) => (creds ? this.build(creds) : null));
       this.cache.set(userId, runtime);
-      void runtime.then((built) => built ?? this.cache.delete(userId));
+      void runtime.then(
+        (built) => built ?? this.cache.delete(userId),
+        () => this.cache.delete(userId),
+      );
     }
     return runtime;
   }
@@ -70,19 +84,28 @@ export class TenantRuntimes {
     this.cache.delete(userId);
   }
 
-  private budgetFor(userId: string): BudgetState {
+  private budgetFor(userId: string): Promise<BudgetState> {
     let budget = this.budgets.get(userId);
     if (!budget) {
-      budget = createBudget(this.deps.budget.capUsd, {
-        usdPerMInput: this.deps.budget.usdPerMInput,
-        usdPerMOutput: this.deps.budget.usdPerMOutput,
-      });
+      budget = this.loadBudget(userId);
       this.budgets.set(userId, budget);
+      budget.catch(() => this.budgets.delete(userId));
     }
     return budget;
   }
 
-  private build(creds: TenantCredentials): TenantRuntime {
+  private async loadBudget(userId: string): Promise<BudgetState> {
+    const budget = createBudget(this.deps.budget.capUsd, {
+      usdPerMInput: this.deps.budget.usdPerMInput,
+      usdPerMOutput: this.deps.budget.usdPerMOutput,
+    });
+    const saved = await this.deps.spend?.store.load(userId);
+    if (saved) Object.assign(budget, saved);
+    this.persister?.attach(userId, budget);
+    return budget;
+  }
+
+  private async build(creds: TenantCredentials): Promise<TenantRuntime> {
     const d = this.deps;
     const razorpay = new RazorpayClient({
       keyId: creds.keyId,
@@ -92,8 +115,9 @@ export class TenantRuntimes {
     const outcomeResolver = new RazorpayOutcomeResolver(razorpay);
     const notifier = new LoggingNotifier(d.events);
     const executor = new AttemptExecutor(d.attempts, d.events, razorpay, outcomeResolver, notifier);
-    const budget = this.budgetFor(creds.userId);
+    const budget = await this.budgetFor(creds.userId);
     const model = guardModel(d.baseModel, budget);
+    const fallbackModel = d.fallbackModel ? guardModel(d.fallbackModel, budget) : undefined;
 
     const pipeline = new RecoveryPipeline({
       cases: d.cases,
@@ -117,7 +141,11 @@ export class TenantRuntimes {
           limit: query.limit ?? 8,
         }),
       runAgent: (agentDeps, events) =>
-        runRecoveryAgent(agentDeps, { model, stepBudget: d.agent.stepBudget, deadlineMs: d.agent.deadlineMs }, events),
+        runRecoveryAgent(
+          agentDeps,
+          { model, fallbackModel, stepBudget: d.agent.stepBudget, deadlineMs: d.agent.deadlineMs },
+          events,
+        ),
     });
 
     const webhookHandler = new WebhookHandler({
