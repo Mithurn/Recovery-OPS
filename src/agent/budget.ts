@@ -72,9 +72,6 @@ function record(budget: BudgetState, usage: unknown): void {
   settle(budget);
 }
 
-// Usage on a stream only arrives with the terminal finish part, so the stream has to be metered as
-// it is consumed rather than read off the call result. A stream that errors or is cancelled before
-// its finish part still cost money, so it is charged as a call without usage.
 function meterStream(budget: BudgetState, stream: ReadableStream<unknown>): ReadableStream<unknown> {
   const reader = stream.getReader();
   let settled = false;
