@@ -4,6 +4,7 @@ import type { Session } from "../auth/Gate.js";
 import type { AgentId } from "../floor/sprites";
 import { Link, navigate, PATHS, usePath } from "../routes.js";
 import { useTweenedNumber } from "../room/useTweenedNumber.js";
+import { BrandMark } from "../ui/BrandMark.js";
 import { customerLabel, rupees } from "../ui/format.js";
 import { OctagonX, PanelRight, X } from "../ui/icons.js";
 import { PixelGrid } from "../agentic/AgentLoader.js";
@@ -210,7 +211,7 @@ function Sidebar({ base, page, mode, waiting, user }: { base: string; page: Page
     <aside className="side" aria-label="Workspace">
       <div className="side__head">
         <Link to={PATHS.landing} className="brand">
-          <span className="brand__mark" aria-hidden />
+          <BrandMark />
           Recovery OPS
         </Link>
         <span className={`env env--${mode}`}>{mode === "demo" ? "Demo" : "Test mode"}</span>

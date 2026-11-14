@@ -159,13 +159,6 @@ textarea.input {
   text-decoration: none;
   letter-spacing: var(--tracking-snug);
 }
-.brand__mark {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  background: var(--ink-fill);
-  box-shadow: 3px 3px 0 0 var(--accent-solid);
-}
 .env {
   padding: 1px 8px;
   font-size: var(--text-2xs);

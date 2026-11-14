@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { DemoScope } from "../demo/DemoScope";
 import { DESKS } from "../floor/layout";
 import { Link, PATHS } from "../routes";
+import { BrandMark } from "../ui/BrandMark";
 import { AgentPortrait } from "./AgentPortrait";
 import { ProductVideo } from "./ProductVideo";
 import "./landing.css";
@@ -46,7 +47,7 @@ function Nav() {
   return (
     <header className="lp-nav">
       <Link to={PATHS.landing} className="lp-brand">
-        <span className="lp-brand__mark" aria-hidden />
+        <BrandMark />
         Recovery OPS
       </Link>
       <nav className="lp-nav__links" aria-label="Sections">
@@ -176,7 +177,7 @@ export function Landing() {
           <div className="lp-footer__top">
             <div className="lp-footer__brand">
               <Link to={PATHS.landing} className="lp-brand">
-                <span className="lp-brand__mark" aria-hidden />
+                <BrandMark />
                 Recovery OPS
               </Link>
               <p>AI agents that recover failed Razorpay payments, inside limits they can't override.</p>

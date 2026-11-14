@@ -23,14 +23,6 @@
   gap: var(--space-xs);
 }
 
-.auth__mark {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  background: var(--ink-fill);
-  box-shadow: 3px 3px 0 0 var(--accent-solid);
-}
-
 .auth__title {
   margin: var(--space-xs) 0 0;
   font-size: var(--text-xl);
