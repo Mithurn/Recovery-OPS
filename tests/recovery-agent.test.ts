@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { degrade, proposalInput, toAction } from "../src/agent/recovery-agent.js";
+import { describe, expect, it, vi } from "vitest";
+import { simulateReadableStream } from "ai";
+import { MockLanguageModelV4 } from "ai/test";
+import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
+import { degrade, proposalInput, runRecoveryAgent, toAction } from "../src/agent/recovery-agent.js";
 import { buildTools, type AgentDeps } from "../src/agent/tools.js";
 import { recoveryAction } from "../src/domain/recovery-action.js";
 import type { RecoveryCase } from "../src/domain/case.js";
@@ -185,5 +188,64 @@ describe("recovery playbook tool", () => {
       ["bank_downtime", "hard_decline", "insufficient_funds", "risk_hold", "soft_decline", "technical", "unrecoverable"].sort(),
     );
     expect(out.playbook.find((p) => p.rootCause === "risk_hold")?.defaultAction).toBe("ESCALATE");
+  });
+});
+
+const submitStream = (): LanguageModelV4StreamPart[] => [
+  { type: "tool-call", toolCallId: "c1", toolName: "submit_proposal", input: JSON.stringify({
+    rootCause: "soft_decline",
+    confidence: 0.8,
+    actionKind: "RETRY_SCHEDULED",
+    retryDelayHours: 6,
+    reasoning: "a soft decline usually clears on a single later retry",
+  }) },
+  { type: "finish", finishReason: { unified: "tool-calls", raw: "tool_calls" }, usage: {
+      inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+      outputTokens: { total: 1, text: 1, reasoning: 0 },
+    } },
+];
+
+const stubModel = (parts: LanguageModelV4StreamPart[] | Error) =>
+  new MockLanguageModelV4({
+    doStream: async () => {
+      if (parts instanceof Error) throw parts;
+      return { stream: simulateReadableStream({ chunks: parts }) };
+    },
+  });
+
+describe("model fallback", () => {
+  const config = { stepBudget: 3, deadlineMs: 5_000 };
+
+  it("retries once on the fallback model when the primary fails with a provider error", async () => {
+    const primary = stubModel(new Error("provider 503"));
+    const fallback = stubModel(submitStream());
+    const onModelFallback = vi.fn();
+    const proposal = await runRecoveryAgent(deps([]), { ...config, model: primary, fallbackModel: fallback }, { onModelFallback });
+    expect(proposal.degraded).toBe(false);
+    expect(proposal.action).toEqual({ kind: "RETRY_SCHEDULED", atHoursFromNow: 6 });
+    expect(onModelFallback).toHaveBeenCalledOnce();
+    expect(fallback.doStreamCalls).toHaveLength(1);
+  });
+
+  it("degrades when there is no fallback model", async () => {
+    const proposal = await runRecoveryAgent(deps([]), { ...config, model: stubModel(new Error("provider 503")) });
+    expect(proposal.degraded).toBe(true);
+  });
+
+  it("degrades when the fallback also fails", async () => {
+    const proposal = await runRecoveryAgent(deps([]), {
+      ...config,
+      model: stubModel(new Error("primary down")),
+      fallbackModel: stubModel(new Error("fallback down")),
+    });
+    expect(proposal.degraded).toBe(true);
+    expect(proposal.reasoning).toContain("fallback down");
+  });
+
+  it("does not call the fallback when the primary concludes", async () => {
+    const fallback = stubModel(submitStream());
+    const proposal = await runRecoveryAgent(deps([]), { ...config, model: stubModel(submitStream()), fallbackModel: fallback });
+    expect(proposal.degraded).toBe(false);
+    expect(fallback.doStreamCalls).toHaveLength(0);
   });
 });
