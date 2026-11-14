@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { requestCode, verifyCode, type User } from "../api.js";
+import { BrandMark } from "../ui/BrandMark.js";
 import { Spinner } from "../ui/motion.js";
 import { CODE_LENGTH, RESEND_COOLDOWN_SECONDS } from "./config.js";
 
@@ -62,7 +63,7 @@ export function Login({ onSignedIn }: { onSignedIn: (user: User) => void }) {
     <main className="auth">
       <section className="auth__card">
         <div className="auth__brand">
-          <span className="auth__mark" aria-hidden />
+          <BrandMark />
           <span className="brand__name">Recovery OPS</span>
         </div>
         <h1 className="auth__title">{step === "email" ? "Sign in" : "Check your email"}</h1>

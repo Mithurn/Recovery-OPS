@@ -73,12 +73,6 @@
   font-size: 12px;
   letter-spacing: 0.02em;
 }
-.lp-brand__mark {
-  width: 16px;
-  height: 16px;
-  background: var(--lp-text);
-  box-shadow: 4px 4px 0 0 var(--lp-sky);
-}
 
 .lp-nav__links {
   display: flex;
