@@ -463,3 +463,7 @@
     transition: none;
   }
 }
+
+.lp-window--pending {
+  aspect-ratio: 544 / 270;
+}
