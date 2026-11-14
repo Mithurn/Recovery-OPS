@@ -243,7 +243,7 @@ describe("RecoveryPipeline.requestStopAll", () => {
     const appended: unknown[] = [];
     const pipeline = new RecoveryPipeline({
       cases: fakeCases(rows),
-      attempts: {} as never,
+      attempts: { listByCase: async () => [] } as never,
       events: { append: async (e: unknown) => void appended.push(e), forCase: async () => [] } as never,
       gateway: new FakeGateway(),
       outcomeResolver: new ScriptedResolver([]),
