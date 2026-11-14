@@ -34,7 +34,7 @@
     "bullmq": "^5.34.0",
     "fastify": "^5.2.0",
     "geist": "^1.9.2",
-    "ioredis": "^5.4.2",
+    "ioredis": "^6.0.0",
     "lucide-react": "^1.72.0",
     "motion": "^13.2.0",
     "pg": "^8.23.1",
