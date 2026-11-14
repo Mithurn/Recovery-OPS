@@ -22,7 +22,8 @@
     "web:build": "vite build --config web/vite.config.ts",
     "api": "tsx watch --env-file-if-exists=.env src/main.ts",
     "bench": "tsx bench/run.ts",
-    "bench:record": "tsx bench/run.ts --record-scripted"
+    "bench:record": "tsx bench/run.ts --record-scripted",
+    "test:coverage": "vitest run --coverage --exclude \"**/*.integration.test.ts\""
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.62",
@@ -47,6 +48,7 @@
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.11",
     "concurrently": "^10.0.5",
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
