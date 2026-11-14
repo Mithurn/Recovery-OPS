@@ -17,7 +17,7 @@ rm -f /tmp/recoveryops.env
 
 ID=$(iid)
 if [ "$(aws ec2 describe-instances --instance-ids "$ID" --query 'Reservations[0].Instances[0].State.Name' --output text)" = running ]; then
-  aws ssm send-command --instance-ids "$ID" --document-name AWS-RunShellScript --parameters 'commands=["cd /opt/recoveryops && /snap/bin/aws ssm get-parameter --region '"$REGION"' --name /recoveryops/env --with-decryption --query Parameter.Value --output text > .env && docker compose -f compose.prod.yml up -d"]' >/dev/null
+  aws ssm send-command --instance-ids "$ID" --document-name AWS-RunShellScript --parameters 'commands=["cd /opt/recoveryops && /snap/bin/aws ssm get-parameter --region '"$REGION"' --name /recoveryops/env --with-decryption --query Parameter.Value --output text | (umask 077; cat > .env.tmp); [ -s .env.tmp ] && mv .env.tmp .env && docker compose -f compose.prod.yml up -d"]' >/dev/null
   echo "updated and restarting"
 else
   echo "updated; applies on next start"
