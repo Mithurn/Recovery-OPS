@@ -211,7 +211,7 @@ describe.runIf(adminUrl)("WebhookHandler", () => {
 
     // Simulate a crash between recording the event id and settling the attempt: the inbox
     // already has this event id, but the attempt is still PENDING.
-    await new PostgresWebhookInbox(db).recordIfNew(evt.eventId, "payment.captured", JSON.parse(evt.rawBody));
+    await new PostgresWebhookInbox(db).recordIfNew(`merch_1:${evt.eventId}`, "payment.captured", JSON.parse(evt.rawBody));
 
     const redelivery = await handler.handle(evt);
     expect(redelivery).toEqual({ status: "processed", attemptStatus: "RECOVERED" });
@@ -222,7 +222,7 @@ describe.runIf(adminUrl)("WebhookHandler", () => {
     await seedPendingAttempt();
     const { handler, attempts, cases } = build(new PaidOnceResolver());
     const evt = signed(capturedEvent());
-    await new PostgresWebhookInbox(db).recordIfNew(evt.eventId, "payment.captured", JSON.parse(evt.rawBody));
+    await new PostgresWebhookInbox(db).recordIfNew(`merch_1:${evt.eventId}`, "payment.captured", JSON.parse(evt.rawBody));
 
     const attempt = (await attempts.listByCase(caseId))[0]!;
     await attempts.settleRecovered(attempt.id, 149900, "pay_wh_crash");
@@ -236,7 +236,7 @@ describe.runIf(adminUrl)("WebhookHandler", () => {
     await seedPendingAttempt();
     const { handler, attempts, cases } = build(new PaidOnceResolver());
     const evt = signed(capturedEvent());
-    await new PostgresWebhookInbox(db).recordIfNew(evt.eventId, "payment.captured", JSON.parse(evt.rawBody));
+    await new PostgresWebhookInbox(db).recordIfNew(`merch_1:${evt.eventId}`, "payment.captured", JSON.parse(evt.rawBody));
 
     const attempt = (await attempts.listByCase(caseId))[0]!;
     await attempts.resolve(attempt.id, { status: "FAILED", detail: "declined" });

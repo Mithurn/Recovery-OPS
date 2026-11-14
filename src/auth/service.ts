@@ -17,19 +17,21 @@ export class AuthService {
   ) {}
 
   async requestCode(email: string): Promise<RequestCodeResult> {
-    const { rows } = await this.db.query("SELECT created_at FROM otp_codes WHERE email = $1", [email]);
-    if (rows.length) {
-      const elapsed = Date.now() - (rows[0].created_at as Date).getTime();
-      if (elapsed < OTP_RESEND_COOLDOWN_MS) return { ok: false, retryAfterMs: OTP_RESEND_COOLDOWN_MS - elapsed };
-    }
     const code = String(randomInt(0, 10 ** OTP_LENGTH)).padStart(OTP_LENGTH, "0");
-    await this.db.query(
+    const { rows } = await this.db.query(
       `INSERT INTO otp_codes (email, code_hash, attempts, expires_at, created_at)
        VALUES ($1, $2, 0, $3, now())
        ON CONFLICT (email) DO UPDATE
-         SET code_hash = EXCLUDED.code_hash, attempts = 0, expires_at = EXCLUDED.expires_at, created_at = now()`,
-      [email, this.codeHash(email, code), new Date(Date.now() + OTP_TTL_MS)],
+         SET code_hash = EXCLUDED.code_hash, attempts = 0, expires_at = EXCLUDED.expires_at, created_at = now()
+         WHERE otp_codes.created_at <= now() - ($4 * interval '1 millisecond')
+       RETURNING email`,
+      [email, this.codeHash(email, code), new Date(Date.now() + OTP_TTL_MS), OTP_RESEND_COOLDOWN_MS],
     );
+    if (!rows.length) {
+      const { rows: current } = await this.db.query("SELECT created_at FROM otp_codes WHERE email = $1", [email]);
+      const elapsed = current.length ? Date.now() - (current[0].created_at as Date).getTime() : OTP_RESEND_COOLDOWN_MS;
+      return { ok: false, retryAfterMs: Math.max(OTP_RESEND_COOLDOWN_MS - elapsed, 0) };
+    }
     await this.mailer.sendCode(email, code);
     return { ok: true };
   }

@@ -52,3 +52,13 @@ export type Attempt = {
 export function idempotencyKeyFor(caseId: string, attemptNo: number): string {
   return `${caseId}:${attemptNo}`;
 }
+
+const AMOUNT_MISMATCH_PREFIX = "capture amount mismatch";
+
+export function amountMismatchDetail(capturedPaise: number, expectedPaise: number): string {
+  return `${AMOUNT_MISMATCH_PREFIX}: captured ${capturedPaise}, expected ${expectedPaise}`;
+}
+
+export function isAmountMismatch(attempt: Pick<Attempt, "status" | "detail">): boolean {
+  return attempt.status === "AWAITING_RECONCILIATION" && (attempt.detail?.startsWith(AMOUNT_MISMATCH_PREFIX) ?? false);
+}

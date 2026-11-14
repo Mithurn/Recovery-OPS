@@ -5,6 +5,7 @@ import type { CredentialStore } from "../tenants/credentials.js";
 import { TEST_KEY_PREFIX } from "../tenants/credentials.js";
 import type { TenantRuntimes } from "../tenants/runtime.js";
 import { FixedWindowLimiter } from "./rate-limit.js";
+import { clientIp, VERIFY_PER_EMAIL_LIMIT, VERIFY_PER_IP_LIMIT, VERIFY_WINDOW_MS } from "./limits.js";
 import { clearSessionCookie, requireUser, sessionToken, setSessionCookie } from "./session.js";
 
 export type AuthRouteDeps = {
@@ -15,6 +16,7 @@ export type AuthRouteDeps = {
   publicUrl: string;
   secureCookies: boolean;
   codeRequestsPerHour: number;
+  verifyPerIpLimit?: number;
 };
 
 const HOUR_MS = 60 * 60_000;
@@ -28,12 +30,14 @@ const keysBody = z.object({
 
 export async function registerAuthRoutes(app: FastifyInstance, deps: AuthRouteDeps): Promise<void> {
   const limiter = new FixedWindowLimiter(deps.codeRequestsPerHour, HOUR_MS);
+  const verifyByIp = new FixedWindowLimiter(deps.verifyPerIpLimit ?? VERIFY_PER_IP_LIMIT, VERIFY_WINDOW_MS);
+  const verifyByEmail = new FixedWindowLimiter(VERIFY_PER_EMAIL_LIMIT, VERIFY_WINDOW_MS);
   const guard = { onRequest: requireUser(deps.auth) };
 
   app.post("/auth/request", async (req, reply) => {
     const body = emailBody.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: "enter a valid email" });
-    if (!limiter.allow(req.ip)) return reply.code(429).send({ error: "too many requests, try again later" });
+    if (!limiter.allow(clientIp(req))) return reply.code(429).send({ error: "too many requests, try again later" });
     const result = await deps.auth.requestCode(body.data.email);
     if (!result.ok) {
       return reply.code(429).send({ error: "code already sent, wait before requesting another", retryAfterMs: result.retryAfterMs });
@@ -44,6 +48,9 @@ export async function registerAuthRoutes(app: FastifyInstance, deps: AuthRouteDe
   app.post("/auth/verify", async (req, reply) => {
     const body = verifyBody.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: "enter the 6 digit code" });
+    if (!verifyByIp.allow(clientIp(req)) || !verifyByEmail.allow(body.data.email)) {
+      return reply.code(429).send({ error: "too many attempts, try again later" });
+    }
     const result = await deps.auth.verifyCode(body.data.email, body.data.code);
     if (!result.ok) {
       const message = result.reason === "expired" ? "code expired, request a new one" : result.reason === "locked" ? "too many attempts, request a new code" : "incorrect code";

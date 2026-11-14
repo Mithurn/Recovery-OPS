@@ -12,7 +12,6 @@ import { AgentDetails } from "./AgentDetails";
 import { CaseDetail } from "./CaseDetail";
 import type { CommandContext } from "./commands";
 import { CasesPage } from "./CasesPage";
-import { FeedList } from "./FeedList";
 import { RecoveredCards, useRecoveredPop, useRecoveries } from "./Recovered";
 import { RunsPanel } from "./RunsPanel";
 import { buildRuns } from "./runs";

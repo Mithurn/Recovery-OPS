@@ -103,6 +103,7 @@ describe.runIf(adminUrl && redisUrl)("product API: auth, keys and tenant isolati
           publicUrl: "http://localhost",
           secureCookies: false,
           codeRequestsPerHour: 100,
+          verifyPerIpLimit: 1000,
         });
         await registerRoutes(api, {
           auth,

@@ -1,9 +1,10 @@
 import type { CaseRepository, AttemptRepository, EventLog, NotificationPort, OutcomeResolver } from "../domain/ports.js";
 import type { Lane, RecoveryCase } from "../domain/case.js";
-import type { Attempt, Clock } from "../domain/attempt.js";
+import { isAmountMismatch, type Attempt, type Clock } from "../domain/attempt.js";
 import type { AgentProposal, RecoveryAction } from "../domain/recovery-action.js";
 import { safetyGate, DEFAULT_LIMITS, msUntilContactWindowOpens, type SafetyLimits } from "../safety/safety-gate.js";
 import { AttemptExecutor } from "../execution/attempt-executor.js";
+import { OutstandingPaymentCloser } from "../execution/outstanding-payments.js";
 import type { PaymentGateway } from "../domain/gateway.js";
 import type { AgentEvents } from "../agent/recovery-agent.js";
 import type { AgentDeps } from "../agent/tools.js";
@@ -19,6 +20,7 @@ export type AgentRunner = (deps: AgentDeps, events: AgentEvents) => Promise<Agen
 const HOUR_MS = 3_600_000;
 const DEFAULT_RESCHEDULE_HOURS = 12;
 const SETTLEMENT_RECHECK_HOURS = 2;
+const AMOUNT_MISMATCH_REASON = "captured amount does not match the case amount";
 
 type TerminalLane = Extract<Lane, "RECOVERED" | "ESCALATED" | "WRITTEN_OFF" | "STOPPED">;
 
@@ -49,11 +51,13 @@ export type PipelineDeps = BuildDeps & {
 
 export class RecoveryPipeline {
   private readonly executor: AttemptExecutor;
+  private readonly outstanding: OutstandingPaymentCloser;
   private readonly limits: SafetyLimits;
   private readonly stopRegistry: StopStore;
 
   constructor(private readonly deps: PipelineDeps) {
     this.executor = new AttemptExecutor(deps.attempts, deps.events, deps.gateway, deps.outcomeResolver, deps.notifier);
+    this.outstanding = new OutstandingPaymentCloser(deps.attempts, deps.events, deps.gateway);
     this.limits = deps.limits ?? DEFAULT_LIMITS;
     this.stopRegistry = deps.stopRegistry ?? new InMemoryStopStore();
   }
@@ -81,6 +85,10 @@ export class RecoveryPipeline {
     return { stoppedNow };
   }
 
+  closeOutstanding(caseId: string, reason: string): Promise<void> {
+    return this.outstanding.close(caseId, reason);
+  }
+
   async resumeAll(): Promise<void> {
     await this.stopRegistry.resumeAll();
   }
@@ -105,6 +113,7 @@ export class RecoveryPipeline {
     for (const attempt of parked) {
       const settled = await this.executor.settle(attempt, kase, reconstructAction(attempt.action));
       if (settled.status === "RECOVERED") return this.resolve(kase, "RECOVERED");
+      if (isAmountMismatch(settled)) return this.escalateMismatch(kase, settled);
       if (settled.status === "PENDING" || settled.status === "AWAITING_RECONCILIATION") {
         return { kind: "awaiting_settlement", delayMs: SETTLEMENT_RECHECK_HOURS * HOUR_MS };
       }
@@ -282,6 +291,7 @@ export class RecoveryPipeline {
     attemptNo: number,
   ): Promise<StepOutcome> {
     if (attempt.status === "RECOVERED") return this.resolve(kase, "RECOVERED");
+    if (isAmountMismatch(attempt)) return this.escalateMismatch(kase, attempt);
     if (action.kind === "ESCALATE") return this.resolve(kase, "ESCALATED");
     if (action.kind === "WRITE_OFF") return this.resolve(kase, "WRITTEN_OFF");
 
@@ -307,7 +317,21 @@ export class RecoveryPipeline {
       type: "CASE_RESOLVED",
       payload: { ...(reason ? { lane, reason } : { lane }), activity: "outcome" },
     });
+    if (lane === "WRITTEN_OFF") await this.closeOutstandingSafely(kase.id, lane);
     return { kind: "resolved", lane };
+  }
+
+  private async escalateMismatch(kase: RecoveryCase, attempt: Attempt): Promise<StepOutcome> {
+    await this.deps.attempts.resolve(attempt.id, { status: "FAILED", detail: attempt.detail });
+    return this.resolve(kase, "ESCALATED", AMOUNT_MISMATCH_REASON);
+  }
+
+  private async closeOutstandingSafely(caseId: string, lane: string): Promise<void> {
+    try {
+      await this.outstanding.close(caseId, lane);
+    } catch (err) {
+      console.error(`closing outstanding payments failed for case ${caseId}`, err);
+    }
   }
 
   private async stop(kase: RecoveryCase, request: StopRequest): Promise<StepOutcome> {
@@ -317,6 +341,7 @@ export class RecoveryPipeline {
       type: "CASE_STOPPED",
       payload: { reason: request.reason, note: request.note ?? null, activity: "outcome" },
     });
+    await this.closeOutstandingSafely(kase.id, "STOPPED");
     return { kind: "resolved", lane: "STOPPED" };
   }
 

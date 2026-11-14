@@ -4,6 +4,8 @@ import { RecoveryFloor } from "../floor/RecoveryFloor";
 import { describeEvent, type FeedLine } from "../floor/floorModel";
 
 const TICKER_LINES = 3;
+const HERO_DESCRIPTION =
+  "Animated office where AI agents investigate a failed payment, message the customer, and hand risky cases to a human.";
 
 export function HeroFloor() {
   const [lines, setLines] = useState<Array<FeedLine & { id: number }>>([]);
@@ -29,7 +31,7 @@ export function HeroFloor() {
         <span className="lp-window__title">agent workspace · recorded replay</span>
       </div>
       <div className="lp-window__screen">
-        <RecoveryFloor bus={bus} selected={null} />
+        <RecoveryFloor bus={bus} selected={null} description={HERO_DESCRIPTION} />
         <ul className="lp-ticker" aria-live="off">
           {lines.map((l) => (
             <li key={l.id} className={`lp-ticker__line lp-ticker__line--${l.tone}`}>

@@ -4,7 +4,9 @@ A multi-agent workspace that recovers failed Razorpay payments. Five agents inve
 
 ![The agent workspace](web/public/shots/workspace.jpg)
 
-Open `/demo` for a recorded replay with no sign-in. Sign up at `/app`, paste your own Razorpay **test** keys, and the same agents work your account.
+**Live demo:** https://recovery-opsagents.vercel.app
+
+Open `/demo` for a recorded replay with no sign-in; it is always up. `/app` needs the AWS backend running, which is started on demand (see [deploy/aws/COMMANDS.md](deploy/aws/COMMANDS.md)). Sign up there, paste your own Razorpay **test** keys, and the same agents work your account.
 
 ## How a case moves
 
@@ -62,7 +64,7 @@ One container serves the API and the built web app. Point Razorpay webhooks at t
 
 ## Results
 
-Replayed from recorded model transcripts, five seeds of a 60 case synthetic corpus with known ground truth.
+Historical figures from an earlier evaluation: replayed from recorded model transcripts, five seeds of a 60 case synthetic corpus with known ground truth. The corpus generator, baselines, transcripts and replay harness are not in this repository, so these numbers cannot be reproduced from it.
 
 | Strategy | Recovery rate (mean) |
 | --- | --- |
@@ -70,7 +72,29 @@ Replayed from recorded model transcripts, five seeds of a 60 case synthetic corp
 | Hand tuned rules table | 59.3% |
 | Fixed retry schedule | 35.7% |
 
-The agent recovers far more than a fixed schedule and lands within about three points of a rules table without beating it. It also names the root cause correctly 73% of the time and leaves an auditable reasoning trail.
+The agent recovered far more than a fixed schedule and landed within about three points of a rules table without beating it. It named the root cause correctly 73% of the time and leaves an auditable reasoning trail.
+
+## Security model
+
+- Email code sign-in, codes and session tokens stored hashed, code requests rate limited per IP.
+- Razorpay secrets encrypted with AES-256-GCM, never returned to the browser, test keys only.
+- Webhooks verified by HMAC signature and deduplicated by event id.
+- Audit log is insert only for the app role, enforced by the database.
+
+## Architecture and decisions
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): flow, layers, data model, guarantees
+- [docs/DECISIONS.md](docs/DECISIONS.md): design tradeoffs
+
+## Limitations and roadmap
+
+- Razorpay test mode only; no live money path has been exercised.
+- Single container, no high availability. The demo backend is stopped when idle.
+- Tenant isolation is in application queries, not row-level security.
+- The audit log has no hash chain, so it does not protect against a database admin.
+- The default model is a free OpenRouter model, so diagnosis quality varies.
+- Auth rate limiting is in memory and per process.
+- Evaluation harness is not published. A reproducible one needs the corpus generator with seeds, the two baselines, recorded transcripts with the model id, and an `npm run bench` that prints the table.
 
 ## Tests
 

@@ -1,5 +1,6 @@
 import { Queue, Worker, type ConnectionOptions } from "bullmq";
 import { Redis } from "ioredis";
+import { RUNTIME_DEFAULTS } from "../config.js";
 
 export const RECOVERY_QUEUE = "recovery";
 
@@ -46,9 +47,10 @@ export async function enqueueRecovery(
 export function recoveryWorker(
   connection: ConnectionOptions,
   process: (job: RecoveryJob, meta: { attemptsMade: number }) => Promise<void>,
+  options: { concurrency?: number } = {},
 ): Worker<RecoveryJob> {
   return new Worker<RecoveryJob>(RECOVERY_QUEUE, async (job) => process(job.data, { attemptsMade: job.attemptsMade }), {
     connection,
-    concurrency: 10,
+    concurrency: options.concurrency ?? RUNTIME_DEFAULTS.workerConcurrency,
   });
 }

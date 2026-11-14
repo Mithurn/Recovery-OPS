@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { streamCase } from "../api.js";
 import type { AuditEvent, ProposalEvent, StreamEvent, ToolResultEvent } from "../types.js";
 import { actLine, resultLine } from "./toolLine.js";
@@ -11,6 +11,7 @@ export type CommentaryLine = { id: number; kind: "act" | "result" | "think"; tex
 export type LiveRun = {
   open: boolean;
   live: boolean;
+  disconnected: boolean;
   reasoning: string;
   tools: string[];
   toolResults: ToolResultEvent[];
@@ -25,6 +26,7 @@ export type LiveRun = {
 const EMPTY: LiveRun = {
   open: false,
   live: false,
+  disconnected: false,
   reasoning: "",
   tools: [],
   toolResults: [],
@@ -127,16 +129,30 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 8000;
 
-export function useLiveRun(caseId: string | null): LiveRun {
+type Action = StreamEvent | { type: "__reset" } | { type: "__lost" } | { type: "__resume" };
+
+export type LiveRunHandle = LiveRun & { reconnect: () => void };
+
+export function useLiveRun(caseId: string | null): LiveRunHandle {
   const [state, dispatch] = useReducer(
-    (s: Internal, action: StreamEvent | { type: "__reset" }) =>
-      action.type === "__reset" ? { ...EMPTY, thinkBuffer: "", nextId: 0 } : reduce(s, action),
+    (s: Internal, action: Action) => {
+      if (action.type === "__reset") return { ...EMPTY, thinkBuffer: "", nextId: 0 };
+      if (action.type === "__lost") return { ...s, live: false, disconnected: true };
+      if (action.type === "__resume") return { ...s, disconnected: false };
+      return reduce(s, action);
+    },
     { ...EMPTY, thinkBuffer: "", nextId: 0 },
   );
+  const [session, setSession] = useState(0);
+  const reconnect = useCallback(() => setSession((n) => n + 1), []);
 
   useEffect(() => {
     dispatch({ type: "__reset" });
+  }, [caseId]);
+
+  useEffect(() => {
     if (!caseId) return;
+    dispatch({ type: "__resume" });
     const controller = new AbortController();
 
     // Only a `done` event means the run is over; any other stream end gets a bounded reconnect.
@@ -147,11 +163,11 @@ export function useLiveRun(caseId: string | null): LiveRun {
         dispatch(ev);
         return ev.type === "done";
       },
-      { baseMs: RECONNECT_BASE_MS, maxMs: RECONNECT_MAX_MS, maxAttempts: MAX_RECONNECT_ATTEMPTS },
+      { baseMs: RECONNECT_BASE_MS, maxMs: RECONNECT_MAX_MS, maxAttempts: MAX_RECONNECT_ATTEMPTS, onExhausted: () => dispatch({ type: "__lost" }) },
     );
 
     return () => controller.abort();
-  }, [caseId]);
+  }, [caseId, session]);
 
-  return state;
+  return { ...state, reconnect };
 }

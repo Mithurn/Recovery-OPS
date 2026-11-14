@@ -72,25 +72,44 @@ function record(budget: BudgetState, usage: unknown): void {
   settle(budget);
 }
 
-// Usage on a stream only arrives with the terminal finish part, so the stream has to be metered as
-// it is consumed rather than read off the call result.
 function meterStream(budget: BudgetState, stream: ReadableStream<unknown>): ReadableStream<unknown> {
-  return stream.pipeThrough(
-    new TransformStream({
-      transform(part, controller) {
-        const p = part as { type?: string; usage?: unknown };
-        if (p.type === "finish") record(budget, p.usage);
-        controller.enqueue(part);
-      },
-    }),
-  );
+  const reader = stream.getReader();
+  let settled = false;
+  const settleOnce = (usage?: unknown) => {
+    if (settled) return;
+    settled = true;
+    record(budget, usage);
+  };
+
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
+          settleOnce();
+          controller.close();
+          return;
+        }
+        const p = value as { type?: string; usage?: unknown };
+        if (p.type === "finish") settleOnce(p.usage);
+        controller.enqueue(value);
+      } catch (err) {
+        settleOnce();
+        controller.error(err);
+      }
+    },
+    async cancel(reason) {
+      settleOnce();
+      await reader.cancel(reason);
+    },
+  });
 }
 
 export function guardModel(model: LanguageModel, budget: BudgetState): LanguageModel {
   // Charged spend is only known after a call returns, so the cap is enforced on entry to the next
   // one. That still bounds the session: at most one call's worth of overshoot past the cap.
   const admit = () => {
-    if (budget.usdUsed > budget.capUsd) {
+    if (budget.usdUsed >= budget.capUsd) {
       throw new Error(
         `model budget cap hit: $${budget.usdUsed.toFixed(4)} over ${budget.calls} calls ` +
           `(${budget.inputTokens} in / ${budget.outputTokens} out tokens, cap $${budget.capUsd})`,

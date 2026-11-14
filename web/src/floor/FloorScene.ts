@@ -202,6 +202,7 @@ export class FloorScene {
         this.characters.get(action.agent)?.cheer();
         break;
       case 'money': {
+        if (prefersReducedMotion()) break;
         const feet = this.spotPosition(action.agent);
         const text = new Text({
           text: action.text,
@@ -216,6 +217,7 @@ export class FloorScene {
         break;
       }
       case 'envelope': {
+        if (prefersReducedMotion()) break;
         const envelope = new MessageEnvelope(this.spotPosition(action.from), this.spotPosition(action.to), action.act, action.needsHuman ?? false);
         this.actors.addChild(envelope.container);
         this.envelopes.push(envelope);

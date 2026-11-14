@@ -6,10 +6,13 @@ export type ReconnectOptions = {
   maxAttempts?: number;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  onExhausted?: () => void;
 };
 
 const DEFAULT_BASE_MS = 1000;
 const DEFAULT_MAX_MS = 8000;
+
+export const backoffDelay = (failures: number, baseMs: number, maxMs: number): number => Math.min(baseMs * 2 ** failures, maxMs);
 
 export async function runReconnectingStream<T>(
   signal: AbortSignal,
@@ -23,7 +26,7 @@ export async function runReconnectingStream<T>(
 
   for (let attempt = 0; !signal.aborted && !done && (opts.maxAttempts === undefined || attempt <= opts.maxAttempts); attempt++) {
     if (attempt > 0) {
-      const delay = Math.min(baseMs * 2 ** (attempt - 1), maxMs);
+      const delay = backoffDelay(attempt - 1, baseMs, maxMs);
       await new Promise((resolve) => setTimeout(resolve, delay));
       if (signal.aborted) return;
     }
@@ -43,4 +46,5 @@ export async function runReconnectingStream<T>(
     if (signal.aborted) return;
     opts.onDisconnected?.();
   }
+  if (!signal.aborted && !done) opts.onExhausted?.();
 }

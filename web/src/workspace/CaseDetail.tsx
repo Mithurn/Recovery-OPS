@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { caseDetail, recover, simulateCapture, stopCase, verifyAudit, type AuditVerify, type RuntimeConfig } from "../api.js";
 import { ActivityStream } from "../loop/ActivityStream.js";
 import { AttemptTimeline } from "../loop/AttemptTimeline.js";
@@ -43,6 +43,17 @@ export function CaseDetail({
   const [confirmingStop, setConfirmingStop] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const run = useLiveRun(caseId);
+  const caseIdRef = useRef(caseId);
+  caseIdRef.current = caseId;
+  const loadDetail = useCallback(
+    () =>
+      caseDetail(caseId)
+        .then((next) => {
+          if (caseIdRef.current === caseId) setDetail(next);
+        })
+        .catch(() => undefined),
+    [caseId],
+  );
   const limits = cfg?.limits ?? DEFAULT_LIMITS;
 
   useEffect(() => {
@@ -52,16 +63,15 @@ export function CaseDetail({
   }, [caseId]);
 
   useEffect(() => {
-    const load = () => caseDetail(caseId).then(setDetail).catch(() => undefined);
-    void load();
-    const poll = setInterval(load, POLL_MS);
+    void loadDetail();
+    const poll = setInterval(loadDetail, POLL_MS);
     return () => clearInterval(poll);
-  }, [caseId]);
+  }, [loadDetail]);
 
   const auditLen = run.audit.length;
   useEffect(() => {
-    if (auditLen > 0) caseDetail(caseId).then(setDetail).catch(() => undefined);
-  }, [auditLen, caseId]);
+    if (auditLen > 0) void loadDetail();
+  }, [auditLen, loadDetail]);
 
   useEffect(() => {
     if (!run.live || !run.startedAt) {
@@ -117,6 +127,15 @@ export function CaseDetail({
         </p>
       </header>
 
+      {run.disconnected && (
+        <div className="notice" role="status">
+          <span>Live updates lost.</span>
+          <button className="btn btn--sm" onClick={run.reconnect}>
+            Reconnect
+          </button>
+        </div>
+      )}
+
       <dl className="facts">
         <div>
           <dt>Status</dt>
@@ -144,7 +163,7 @@ export function CaseDetail({
         )}
         {kase.lane === "ATTEMPTING" && attempt?.status === "PENDING" && attempt.razorpayRef && keyId && (
           <>
-            <RazorpayCheckout caseId={caseId} keyId={keyId} customerRef={kase.customerRef} onPaid={() => caseDetail(caseId).then(setDetail).catch(() => undefined)} />
+            <RazorpayCheckout caseId={caseId} keyId={keyId} customerRef={kase.customerRef} onPaid={() => void loadDetail()} />
             <button className="btn btn--sm" onClick={guarded(() => simulateCapture(caseId))}>
               Simulate payment
             </button>

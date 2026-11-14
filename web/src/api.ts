@@ -84,21 +84,25 @@ async function* readSse<T>(path: string, signal: AbortSignal): AsyncGenerator<T>
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) return;
-    buffer += decoder.decode(value, { stream: true });
-    const chunks = buffer.split("\n\n");
-    buffer = chunks.pop() ?? "";
-    for (const chunk of chunks) {
-      const line = chunk.split("\n").find((l) => l.startsWith("data: "));
-      if (!line) continue;
-      try {
-        yield JSON.parse(line.slice(6)) as T;
-      } catch {
-        /* keep-alive comment or partial */
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() ?? "";
+      for (const chunk of chunks) {
+        const line = chunk.split("\n").find((l) => l.startsWith("data: "));
+        if (!line) continue;
+        try {
+          yield JSON.parse(line.slice(6)) as T;
+        } catch {
+          /* keep-alive comment or partial */
+        }
       }
     }
+  } finally {
+    await reader.cancel().catch(() => undefined);
   }
 }
 

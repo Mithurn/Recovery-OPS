@@ -19,8 +19,18 @@ export class RazorpayOutcomeResolver implements OutcomeResolver {
         ? ((await this.gateway.getPaymentLink(input.razorpayRef))?.payments ?? [])
         : await this.gateway.listOrderPayments(input.razorpayRef);
 
-    const captured = payments.find((p) => p.status === "captured" && p.capturedPaise > 0);
-    if (captured) return { kind: "recovered", capturedPaise: captured.capturedPaise, paymentId: captured.id };
+    const captures = payments.filter((p) => p.status === "captured" && p.capturedPaise > 0);
+    const exact = captures.find((p) => p.capturedPaise === input.amountPaise);
+    if (exact) return { kind: "recovered", capturedPaise: exact.capturedPaise, paymentId: exact.id };
+    const offAmount = captures[0];
+    if (offAmount) {
+      return {
+        kind: "mismatch",
+        capturedPaise: offAmount.capturedPaise,
+        expectedPaise: input.amountPaise,
+        paymentId: offAmount.id,
+      };
+    }
 
     const failed = payments.find((p) => p.status === "failed");
     if (failed && payments.every((p) => p.status === "failed")) {
