@@ -16,3 +16,6 @@ test-results/
 *.png
 .env.bak-session
 
+
+CLAUDE.md
+.claude/

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-// The dependency rule is documented in CLAUDE.md and the README. Documented rules rot; this one
+// The dependency rule is documented in the README. Documented rules rot; this one
 // is executed instead. Same instinct as the append-only test, which proves the audit guarantee by
 // connecting as the app role and expecting the database to refuse.
 //
