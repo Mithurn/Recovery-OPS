@@ -41,8 +41,8 @@ try {
 checks.push({ name: "UPDATE on recovery_events is refused", pass: updateRefused, detail: updateErr });
 
 // 3. DELETE is refused.
-let deleteRefused = false;
-let deleteErr = "";
+let deleteRefused: boolean;
+let deleteErr: string;
 try {
   await db.query("DELETE FROM recovery_events WHERE id = -1");
   deleteRefused = false;

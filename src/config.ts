@@ -18,6 +18,7 @@ const schema = z.object({
   GOOGLE_GENERATIVE_AI_API_KEY: optionalString,
   // gemini-2.5-flash and gemini-2.0-flash are both retired; 3.6-flash is the successor.
   AGENT_MODEL: z.string().default("minimax/minimax-m3:free"),
+  AGENT_FALLBACK_MODEL: optionalString,
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PUBLIC_URL: z.string().url().default("http://localhost:5173"),
   VAULT_KEY: z.string().min(1),

@@ -8,9 +8,9 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     rules: {
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "no-useless-assignment": "warn",
-      "require-yield": "warn",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-useless-assignment": "error",
+      "require-yield": "error",
     },
   },
   {

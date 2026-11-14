@@ -25,8 +25,11 @@ export const proposalInput = z.object({
   reasoning: z.string().min(20).max(1500),
 });
 
+export const FALLBACK_PRIMARY_DEADLINE_SHARE = 0.6;
+
 export type AgentConfig = {
   model: LanguageModel;
+  fallbackModel?: LanguageModel;
   stepBudget: number;
   deadlineMs: number;
 };
@@ -37,6 +40,7 @@ export type AgentEvents = {
   onToolCall?: (call: ToolCall) => void | Promise<void>;
   onToolResult?: (result: ToolResult) => void | Promise<void>;
   onConcluded?: (proposal: AgentProposal) => void;
+  onModelFallback?: (reason: string) => void;
 };
 
 const SAFE_FALLBACK: RecoveryAction = { kind: "RETRY_SCHEDULED", atHoursFromNow: 48 };
@@ -103,14 +107,14 @@ export async function runRecoveryAgent(
   );
   const tools = { ...investigationTools, submit_proposal: submit };
 
-  try {
+  const attempt = async (model: LanguageModel, deadlineMs: number): Promise<AgentProposal> => {
     const result = streamText({
-      model: config.model,
+      model,
       system: SYSTEM_PROMPT,
       prompt: caseBrief(deps.kase, deps.priorAttempts.length),
       tools,
       maxRetries: 2,
-      abortSignal: AbortSignal.timeout(config.deadlineMs),
+      abortSignal: AbortSignal.timeout(deadlineMs),
       stopWhen: [stepCountIs(config.stepBudget), hasToolCall("submit_proposal")],
       prepareStep: ({ stepNumber }) =>
         stepNumber >= config.stepBudget - 1
@@ -146,13 +150,29 @@ export async function runRecoveryAgent(
     };
     events.onConcluded?.(proposal);
     return proposal;
-  } catch (err) {
-    const reason =
-      err instanceof Error && err.name === "TimeoutError"
-        ? "deadline"
-        : `error: ${err instanceof Error ? err.message : String(err)}`;
-    const fallback = degrade(reason, toolCalls);
-    events.onConcluded?.(fallback);
-    return fallback;
+  };
+
+  const models = config.fallbackModel ? [config.model, config.fallbackModel] : [config.model];
+  const startedAt = Date.now();
+  for (const [i, model] of models.entries()) {
+    const remaining = Math.max(0, config.deadlineMs - (Date.now() - startedAt));
+    const isLast = i === models.length - 1;
+    const deadlineMs = isLast ? remaining : Math.floor(remaining * FALLBACK_PRIMARY_DEADLINE_SHARE);
+    try {
+      return await attempt(model, deadlineMs);
+    } catch (err) {
+      const reason =
+        err instanceof Error && err.name === "TimeoutError"
+          ? "deadline"
+          : `error: ${err instanceof Error ? err.message : String(err)}`;
+      if (!isLast) {
+        events.onModelFallback?.(reason);
+        continue;
+      }
+      const fallback = degrade(reason, toolCalls);
+      events.onConcluded?.(fallback);
+      return fallback;
+    }
   }
+  throw new Error("unreachable");
 }
