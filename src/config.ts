@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const RUNTIME_DEFAULTS = {
+  pgPoolMax: 10,
+  pgIdleTimeoutMs: 30_000,
+  pgConnectionTimeoutMs: 5_000,
+  pgStatementTimeoutMs: 30_000,
+  workerConcurrency: 5,
+} as const;
+
 const optionalString = z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional());
 
 const schema = z.object({
@@ -26,6 +34,11 @@ const schema = z.object({
   // them with the model, and after any pricing change.
   AGENT_USD_PER_M_INPUT: z.coerce.number().nonnegative().default(1.5),
   AGENT_USD_PER_M_OUTPUT: z.coerce.number().nonnegative().default(7.5),
+  PG_POOL_MAX: z.coerce.number().int().positive().default(RUNTIME_DEFAULTS.pgPoolMax),
+  PG_IDLE_TIMEOUT_MS: z.coerce.number().int().positive().default(RUNTIME_DEFAULTS.pgIdleTimeoutMs),
+  PG_CONNECTION_TIMEOUT_MS: z.coerce.number().int().positive().default(RUNTIME_DEFAULTS.pgConnectionTimeoutMs),
+  PG_STATEMENT_TIMEOUT_MS: z.coerce.number().int().positive().default(RUNTIME_DEFAULTS.pgStatementTimeoutMs),
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(RUNTIME_DEFAULTS.workerConcurrency),
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default("localhost"),
 });

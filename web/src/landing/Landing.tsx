@@ -1,10 +1,12 @@
+import { lazy, Suspense } from "react";
 import { DemoScope } from "../demo/DemoScope";
 import { DESKS } from "../floor/layout";
 import { Link, PATHS } from "../routes";
 import { AgentPortrait } from "./AgentPortrait";
-import { HeroFloor } from "./HeroFloor";
 import { ProductVideo } from "./ProductVideo";
 import "./landing.css";
+
+const HeroFloor = lazy(() => import("./HeroFloor").then((m) => ({ default: m.HeroFloor })));
 
 const toHex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -83,7 +85,9 @@ export function Landing() {
               Sign up
             </Link>
           </div>
-          <HeroFloor />
+          <Suspense fallback={<div className="lp-window lp-window--pending" aria-hidden />}>
+            <HeroFloor />
+          </Suspense>
         </section>
 
         <section className="lp-band" aria-label="Highlights">

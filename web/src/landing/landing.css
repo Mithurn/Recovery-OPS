@@ -464,6 +464,10 @@
   }
 }
 
+.lp-window--pending {
+  aspect-ratio: 544 / 270;
+}
+
 /* Product tour video */
 .lp-tour {
   display: flex;

@@ -28,12 +28,12 @@ checks.push({
 });
 
 // 2. UPDATE is refused.
-let updateRefused = false;
-let updateErr = "";
+let updateRefused: boolean;
+let updateErr: string;
 try {
   await db.query("UPDATE recovery_events SET type = type WHERE id = -1");
   updateRefused = false;
-  updateErr = "UPDATE succeeded — append-only NOT enforced";
+  updateErr = "UPDATE succeeded, append-only NOT enforced";
 } catch (err) {
   updateRefused = true;
   updateErr = err instanceof Error ? err.message : String(err);

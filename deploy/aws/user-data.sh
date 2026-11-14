@@ -14,8 +14,8 @@ snap install aws-cli --classic
 curl -fsSL https://get.docker.com | sh
 
 git clone "$REPO" "$APP"
-/snap/bin/aws ssm get-parameter --region "$REGION" --name /recoveryops/env --with-decryption \
-  --query Parameter.Value --output text > "$APP/.env"
+(umask 077; /snap/bin/aws ssm get-parameter --region "$REGION" --name /recoveryops/env --with-decryption \
+  --query Parameter.Value --output text > "$APP/.env")
 
 cat > /usr/local/bin/recoveryops-boot.sh <<'B'
 #!/bin/bash
@@ -31,6 +31,7 @@ if [ -n "$DD" ]; then
   curl -s "https://www.duckdns.org/update?domains=$NAME&token=$DTOKEN&ip=$IP" >/dev/null
   sed -i "s|^SITE_ADDRESS=.*|SITE_ADDRESS=$NAME.duckdns.org|; s|^PUBLIC_URL=.*|PUBLIC_URL=https://$NAME.duckdns.org|" .env
 fi
+chmod 600 .env
 docker compose -f compose.prod.yml up -d
 B
 chmod +x /usr/local/bin/recoveryops-boot.sh

@@ -54,6 +54,7 @@ export interface OutcomeResolver {
 
 export type OutcomeVerdict =
   | { kind: "recovered"; capturedPaise: number; paymentId: string }
+  | { kind: "mismatch"; capturedPaise: number; expectedPaise: number; paymentId: string }
   | { kind: "failed"; detail: string }
   | { kind: "pending" };
 

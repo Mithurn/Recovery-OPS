@@ -22,6 +22,9 @@ import { CaseEventBus } from "./api/event-bus.js";
 import { registerRoutes } from "./api/routes.js";
 import { registerAuthRoutes } from "./api/auth-routes.js";
 import { keepRawJsonBody } from "./api/raw-body.js";
+import { registerHealth } from "./api/health.js";
+import { redactWebhookToken, SHUTDOWN_MARGIN_MS } from "./api/limits.js";
+import { createShutdown } from "./api/shutdown.js";
 import { AuthService } from "./auth/service.js";
 import { ConsoleMailer, ResendMailer } from "./auth/mailer.js";
 import { parseVaultKey } from "./auth/crypto.js";
@@ -32,7 +35,12 @@ const config = loadConfig();
 const isProduction = config.NODE_ENV === "production";
 if (isProduction && !config.RESEND_API_KEY) throw new Error("RESEND_API_KEY is required in production");
 
-const pool = createPool(config.DATABASE_URL);
+const pool = createPool(config.DATABASE_URL, {
+  max: config.PG_POOL_MAX,
+  idleTimeoutMs: config.PG_IDLE_TIMEOUT_MS,
+  connectionTimeoutMs: config.PG_CONNECTION_TIMEOUT_MS,
+  statementTimeoutMs: config.PG_STATEMENT_TIMEOUT_MS,
+});
 const attempts = new PostgresAttemptRepository(pool);
 const webhooks = new PostgresWebhookInbox(pool);
 const bus = new CaseEventBus();
@@ -77,6 +85,7 @@ const worker = recoveryWorker(
     bus,
     events,
   ),
+  { concurrency: config.WORKER_CONCURRENCY },
 );
 const sweep = startReconcileSweep(attempts, cases, queue);
 
@@ -88,12 +97,29 @@ const auth = new AuthService(
   config.SESSION_SECRET,
 );
 
-const app = Fastify({ logger: true, trustProxy: isProduction });
+const app = Fastify({
+  logger: {
+    serializers: {
+      req: (req) => ({
+        method: req.method,
+        url: redactWebhookToken(req.url ?? ""),
+        host: req.host,
+        remoteAddress: req.ip,
+        remotePort: req.socket?.remotePort,
+      }),
+    },
+  },
+  trustProxy: isProduction,
+  forceCloseConnections: true,
+});
 keepRawJsonBody(app);
 
 await app.register(
   async (api) => {
-    api.get("/health", async () => ({ status: "ok" }));
+    registerHealth(api, {
+      postgres: () => pool.query("SELECT 1"),
+      redis: () => redis.ping(),
+    });
     await registerAuthRoutes(api, {
       auth,
       credentials,
@@ -136,9 +162,18 @@ if (existsSync(webRoot)) {
 
 await app.listen({ port: config.PORT, host: config.HOST });
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.on(signal, () => {
-    sweep.stop();
-    void Promise.allSettled([app.close(), worker.close(), queue.close(), pool.end()]).then(() => process.exit(0));
-  });
-}
+const shutdown = createShutdown({
+  timeoutMs: config.AGENT_TIMEOUT_MS + SHUTDOWN_MARGIN_MS,
+  exit: (code) => process.exit(code),
+  log: (message, error) => app.log.error({ err: error }, message),
+  steps: [
+    { name: "sweep", run: () => sweep.stop() },
+    { name: "http", run: () => app.close() },
+    { name: "worker", run: () => worker.close() },
+    { name: "queue", run: () => queue.close() },
+    { name: "redis", run: () => Promise.all([redis.quit(), (connection as Redis).quit()]) },
+    { name: "pool", run: () => pool.end() },
+  ],
+});
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => void shutdown());

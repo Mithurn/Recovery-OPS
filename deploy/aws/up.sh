@@ -14,28 +14,33 @@ rand() { head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9'; }
 DD=$(aws ssm get-parameter --name /$NAME/duckdns --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
 PUBLIC=${PUBLIC_URL:-http://localhost}; SITE=:80
 if [ -n "$DD" ]; then PUBLIC="https://${DD%%:*}.duckdns.org"; SITE="${DD%%:*}.duckdns.org"; fi
+ENV_FILE=$(umask 077; mktemp)
+trap 'rm -f "$ENV_FILE"' EXIT
 {
-  grep -vE '^(#|$|HOST=|PORT=|DATABASE_URL=|ADMIN_DATABASE_URL=|REDIS_URL=|NODE_ENV=|PUBLIC_URL=|VAULT_KEY=|SESSION_SECRET=|ADMIN_DB_PASSWORD=|APP_DB_PASSWORD=|SITE_ADDRESS=)' .env
+  grep -vE '^(#|$|HOST=|PORT=|DATABASE_URL=|ADMIN_DATABASE_URL=|REDIS_URL=|NODE_ENV=|PUBLIC_URL=|VAULT_KEY=|SESSION_SECRET=|ADMIN_DB_PASSWORD=|APP_DB_PASSWORD=|REDIS_PASSWORD=|SITE_ADDRESS=)' .env
   echo "NODE_ENV=production"
   echo "PUBLIC_URL=$PUBLIC"
   echo "VAULT_KEY=$(openssl rand -base64 32)"
   echo "SESSION_SECRET=$(openssl rand -hex 24)"
   echo "ADMIN_DB_PASSWORD=$(rand)"
   echo "APP_DB_PASSWORD=$(rand)"
+  echo "REDIS_PASSWORD=$(rand)"
   echo "SITE_ADDRESS=$SITE"
-} > /tmp/recoveryops.env
-aws ssm put-parameter --name /$NAME/env --type SecureString --overwrite --value file:///tmp/recoveryops.env >/dev/null
-rm -f /tmp/recoveryops.env
+} > "$ENV_FILE"
+aws ssm put-parameter --name /$NAME/env --type SecureString --overwrite --value "file://$ENV_FILE" >/dev/null
+rm -f "$ENV_FILE"
 
 if ! aws iam get-role --role-name $NAME >/dev/null 2>&1; then
   aws iam create-role --role-name $NAME --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}' >/dev/null
   aws iam attach-role-policy --role-name $NAME --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-  aws iam put-role-policy --role-name $NAME --policy-name read-params --policy-document \
-    "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"ssm:GetParameter\",\"kms:Decrypt\"],\"Resource\":\"*\"}]}"
   aws iam create-instance-profile --instance-profile-name $NAME >/dev/null
   aws iam add-role-to-instance-profile --instance-profile-name $NAME --role-name $NAME
   sleep 12
 fi
+
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+SSM_KEY_ARN=$(aws kms describe-key --key-id alias/aws/ssm --query KeyMetadata.Arn --output text)
+aws iam put-role-policy --role-name $NAME --policy-name read-params --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"ssm:GetParameter\",\"Resource\":\"arn:aws:ssm:$REGION:$ACCOUNT:parameter/$NAME/*\"},{\"Effect\":\"Allow\",\"Action\":\"kms:Decrypt\",\"Resource\":\"$SSM_KEY_ARN\",\"Condition\":{\"StringEquals\":{\"kms:ViaService\":\"ssm.$REGION.amazonaws.com\"}}}]}"
 
 VPC=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)
 SG=$(aws ec2 describe-security-groups --filters Name=group-name,Values=$NAME Name=vpc-id,Values="$VPC" --query 'SecurityGroups[0].GroupId' --output text)

@@ -1,6 +1,6 @@
 import type { AttemptRepository, EventLog, NotificationPort, OutcomeResolver } from "../domain/ports.js";
 import type { Attempt, AttemptRequest, AttemptStatus } from "../domain/attempt.js";
-import { idempotencyKeyFor } from "../domain/attempt.js";
+import { amountMismatchDetail, idempotencyKeyFor } from "../domain/attempt.js";
 import { MOVES_MONEY, type RecoveryAction } from "../domain/recovery-action.js";
 import { GatewayRejectedError, GatewayUnavailableError, type PaymentGateway } from "../domain/gateway.js";
 import { RazorpayClient } from "./razorpay-client.js";
@@ -220,6 +220,11 @@ export class AttemptExecutor {
     const verdict = await this.resolver.resolve({ caseId, action, razorpayRef, amountPaise });
     if (verdict.kind === "recovered") {
       await this.attempts.settleRecovered(attemptId, verdict.capturedPaise, verdict.paymentId);
+    } else if (verdict.kind === "mismatch") {
+      await this.attempts.resolve(attemptId, {
+        status: "AWAITING_RECONCILIATION",
+        detail: amountMismatchDetail(verdict.capturedPaise, verdict.expectedPaise),
+      });
     } else if (verdict.kind === "failed") {
       await this.attempts.resolve(attemptId, { status: "FAILED", detail: verdict.detail });
     }

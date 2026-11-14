@@ -16,6 +16,8 @@ import { FAILURE_SCENARIOS, scenarioById } from "../tenants/scenarios.js";
 import type { RecentActivity } from "../persistence/recent-activity.js";
 import { openSse } from "./sse.js";
 import { requireUser } from "./session.js";
+import { FixedWindowLimiter } from "./rate-limit.js";
+import { STREAM_NEGATIVE_TTL_MS, WEBHOOK_PER_TOKEN_LIMIT, WEBHOOK_WINDOW_MS } from "./limits.js";
 import { directedAction, SHARED_TOKEN_APPROVER } from "../worker/human-directive.js";
 
 export type RuntimeInfo = {
@@ -64,8 +66,17 @@ function parseIdParam(req: FastifyRequest, reply: FastifyReply): string | null {
   return parsed.data.id;
 }
 
+function isPaymentFailed(rawBody: string): boolean {
+  try {
+    return (JSON.parse(rawBody) as { event?: unknown }).event === "payment.failed";
+  } catch {
+    return false;
+  }
+}
+
 export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Promise<void> {
   const guard = { onRequest: requireUser(deps.auth) };
+  const webhookLimiter = new FixedWindowLimiter(WEBHOOK_PER_TOKEN_LIMIT, WEBHOOK_WINDOW_MS);
 
   async function ownedCase(req: FastifyRequest, reply: FastifyReply): Promise<RecoveryCase | null> {
     const id = parseIdParam(req, reply);
@@ -223,6 +234,8 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
     if (kase.lane !== "ESCALATED") return reply.code(409).send({ error: "case is not awaiting a decision" });
 
     if (body.data.decision === "write_off") {
+      const runtime = await deps.runtimes.forUser(req.user!.id);
+      await runtime?.pipeline.closeOutstanding(kase.id, "WRITTEN_OFF");
       await deps.events.append({
         caseId: kase.id,
         type: "CASE_RESOLVED",
@@ -253,14 +266,20 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
 
   app.get("/stream", guard, async (req, reply) => {
     const userId = req.user!.id;
-    const owned = new Map<string, boolean>();
+    const owned = new Set<string>();
+    const deniedUntil = new Map<string, number>();
     const isOwned = async (caseId: string): Promise<boolean> => {
-      const cached = owned.get(caseId);
-      if (cached !== undefined) return cached;
+      if (owned.has(caseId)) return true;
+      const now = Date.now();
+      if ((deniedUntil.get(caseId) ?? 0) > now) return false;
       const kase = await deps.cases.byId(caseId);
-      const result = kase?.merchantRef === userId;
-      if (result) owned.set(caseId, true);
-      return result;
+      if (kase?.merchantRef === userId) {
+        owned.add(caseId);
+        deniedUntil.delete(caseId);
+        return true;
+      }
+      deniedUntil.set(caseId, now + STREAM_NEGATIVE_TTL_MS);
+      return false;
     };
     openSse(
       req,
@@ -318,6 +337,7 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
 
   app.post("/webhooks/razorpay/:token", async (req, reply) => {
     const token = (req.params as { token?: string }).token;
+    if (token && !webhookLimiter.allow(token)) return reply.code(429).send({ error: "rate limit exceeded" });
     const runtime = token ? await deps.runtimes.forWebhookToken(token) : null;
     if (!runtime) return reply.code(404).send({ error: "unknown webhook" });
     const signature = req.headers["x-razorpay-signature"];
@@ -328,6 +348,9 @@ export async function registerRoutes(app: FastifyInstance, deps: RouteDeps): Pro
     // A re-serialized body can never verify against Razorpay's HMAC — fail loudly, not silently.
     const rawBody = (req as { rawBody?: string }).rawBody;
     if (rawBody === undefined) return reply.code(500).send({ error: "rawBody unavailable" });
+    if (isPaymentFailed(rawBody) && (await deps.cases.listLive(runtime.userId)).length >= deps.maxCasesPerUser) {
+      return reply.code(429).send({ error: `live case limit of ${deps.maxCasesPerUser} reached` });
+    }
     const result = await runtime.webhookHandler.handle({ rawBody, signature, eventId });
     const code = result.status === "invalid_signature" ? 401 : result.status === "malformed" ? 400 : 200;
     return reply.code(code).send(result);

@@ -42,6 +42,7 @@ export type TenantRuntime = {
 
 export class TenantRuntimes {
   private readonly cache = new Map<string, Promise<TenantRuntime | null>>();
+  private readonly budgets = new Map<string, BudgetState>();
 
   constructor(private readonly deps: TenantRuntimeDeps) {}
 
@@ -69,6 +70,18 @@ export class TenantRuntimes {
     this.cache.delete(userId);
   }
 
+  private budgetFor(userId: string): BudgetState {
+    let budget = this.budgets.get(userId);
+    if (!budget) {
+      budget = createBudget(this.deps.budget.capUsd, {
+        usdPerMInput: this.deps.budget.usdPerMInput,
+        usdPerMOutput: this.deps.budget.usdPerMOutput,
+      });
+      this.budgets.set(userId, budget);
+    }
+    return budget;
+  }
+
   private build(creds: TenantCredentials): TenantRuntime {
     const d = this.deps;
     const razorpay = new RazorpayClient({
@@ -79,10 +92,7 @@ export class TenantRuntimes {
     const outcomeResolver = new RazorpayOutcomeResolver(razorpay);
     const notifier = new LoggingNotifier(d.events);
     const executor = new AttemptExecutor(d.attempts, d.events, razorpay, outcomeResolver, notifier);
-    const budget = createBudget(d.budget.capUsd, {
-      usdPerMInput: d.budget.usdPerMInput,
-      usdPerMOutput: d.budget.usdPerMOutput,
-    });
+    const budget = this.budgetFor(creds.userId);
     const model = guardModel(d.baseModel, budget);
 
     const pipeline = new RecoveryPipeline({

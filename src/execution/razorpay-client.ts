@@ -220,6 +220,10 @@ export class RazorpayClient implements PaymentGateway {
     }
   }
 
+  async cancelPaymentLink(linkId: string): Promise<void> {
+    await this.call(`/payment_links/${encodeURIComponent(linkId)}/cancel`, { method: "POST", body: {} });
+  }
+
   async getPayment(paymentId: string): Promise<GatewayPayment | null> {
     try {
       const body = await this.call(`/payments/${encodeURIComponent(paymentId)}`);

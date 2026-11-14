@@ -82,6 +82,38 @@ describe("model budget metering", () => {
     expect(budget.usdUsed).toBeCloseTo(0.0135, 8);
   });
 
+  it("charges a stream that errors before its finish part at the fallback rate", async () => {
+    const budget = createBudget(10, pricing);
+    const failing = {
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({ type: "text-delta", delta: "hi" });
+            controller.error(new Error("connection reset"));
+          },
+        }),
+      }),
+    } as unknown as LanguageModel;
+    const model = guardModel(failing, budget);
+
+    const { stream } = await (model as unknown as { doStream: () => Promise<{ stream: ReadableStream<unknown> }> }).doStream();
+    await expect(drain(stream)).rejects.toThrow("connection reset");
+
+    expect(budget.callsWithoutUsage).toBe(1);
+    expect(budget.usdUsed).toBe(0.0025);
+  });
+
+  it("charges a stream cancelled before its finish part exactly once", async () => {
+    const budget = createBudget(10, pricing);
+    const model = guardModel(fakeModel({ stream: [{ type: "text-delta", delta: "hi" }] }), budget);
+
+    const { stream } = await (model as unknown as { doStream: () => Promise<{ stream: ReadableStream<unknown> }> }).doStream();
+    await stream.cancel();
+    await stream.cancel();
+
+    expect(budget.callsWithoutUsage).toBe(1);
+  });
+
   it("charges a call that reports no usage at the fallback rate instead of zero", async () => {
     const budget = createBudget(10, pricing);
     const model = guardModel(fakeModel({ generate: {} }), budget);
@@ -123,6 +155,19 @@ describe("model budget metering", () => {
     await expect(call()).rejects.toThrow(/model budget cap hit/);
     // The refused call never reached the provider, so it is not counted against the session.
     expect(budget.calls).toBe(1);
+  });
+
+  it("refuses the next call when spend lands exactly on the cap", async () => {
+    const budget = createBudget(1.5, pricing);
+    const model = guardModel(
+      fakeModel({ generate: { usage: { inputTokens: { total: 1_000_000 }, outputTokens: { total: 0 } } } }),
+      budget,
+    );
+    const call = () => (model as unknown as { doGenerate: () => Promise<unknown> }).doGenerate();
+
+    await call();
+
+    await expect(call()).rejects.toThrow(/model budget cap hit/);
   });
 
   it("passes through unrelated model properties untouched", () => {

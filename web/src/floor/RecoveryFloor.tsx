@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RoomBus } from '../room/roomBus';
 import { FloorScene } from './FloorScene';
 import { actionsFor } from './floorModel';
@@ -9,12 +9,15 @@ export function RecoveryFloor({
   bus,
   onSelectAgent,
   selected,
+  description,
 }: {
   bus: RoomBus;
+  description?: string;
   onSelectAgent?: (agent: AgentId) => void;
   selected: AgentId | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
   const sceneRef = useRef<FloorScene | null>(null);
   const onSelectRef = useRef(onSelectAgent);
   onSelectRef.current = onSelectAgent;
@@ -24,6 +27,7 @@ export function RecoveryFloor({
     if (!host) return;
     let scene: FloorScene | null = null;
     let disposed = false;
+    let broken = false;
     const pending: ReturnType<typeof actionsFor>[] = [];
 
     FloorScene.create(host, { onSelectAgent: (agent) => onSelectRef.current?.(agent) }).then((created) => {
@@ -35,12 +39,16 @@ export function RecoveryFloor({
       sceneRef.current = created;
       for (const batch of pending) created.enqueue(batch);
       pending.length = 0;
+    }).catch(() => {
+      broken = true;
+      if (!disposed) setFailed(true);
+      pending.length = 0;
     });
 
     const off = bus.subscribe((event) => {
       const batch = actionsFor(event);
       if (scene) scene.enqueue(batch);
-      else pending.push(batch);
+      else if (!broken) pending.push(batch);
     });
 
     return () => {
@@ -57,7 +65,12 @@ export function RecoveryFloor({
 
   return (
     <>
-      <div ref={hostRef} className="floor" aria-hidden />
+      <div ref={hostRef} className="floor" {...(description ? { role: 'img', 'aria-label': description } : { 'aria-hidden': true })} />
+      {failed && (
+        <p className="floor__fallback" role="status">
+          The live floor needs WebGL, which this browser could not start.
+        </p>
+      )}
       {onSelectAgent && (
         <div className="sr-only" role="group" aria-label="Agents">
           {DESKS.map((d) => (

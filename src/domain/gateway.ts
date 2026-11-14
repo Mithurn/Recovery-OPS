@@ -77,4 +77,7 @@ export interface PaymentGateway {
   getPaymentLink(linkId: string): Promise<(GatewayPaymentLink & { payments: GatewayPayment[] }) | null>;
 
   listDowntimes(): Promise<Downtime[]>;
+
+  /** Orders cannot be cancelled on Razorpay, so only links are closable. */
+  cancelPaymentLink?(linkId: string): Promise<void>;
 }

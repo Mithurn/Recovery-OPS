@@ -81,7 +81,7 @@ describe("reconcile sweep", () => {
     const attempts = { listUnsettled: async () => [] } as unknown as AttemptRepository;
     const cases = {
       byId: async () => kase({ lane: "DIAGNOSING" }),
-      listStaleInLane: async () => [kase({ lane: "DIAGNOSING" })],
+      listStaleInLane: async (lane: string) => (lane === "DIAGNOSING" ? [kase({ lane: "DIAGNOSING" })] : []),
     } as unknown as CaseRepository;
     const add = vi.fn(async () => undefined);
     const removeDeduplicationKey = vi.fn(async () => undefined);
@@ -95,5 +95,23 @@ describe("reconcile sweep", () => {
     expect((data as { caseId: string }).caseId).toBe("c1");
     expect((data as { reclaim?: boolean }).reclaim).toBe(true);
     expect((opts as { deduplication?: { id: string } }).deduplication?.id).toBe("c1");
+  });
+
+  it("enqueues a case that never left INCOMING", async () => {
+    const attempts = { listUnsettled: async () => [] } as unknown as AttemptRepository;
+    const cases = {
+      byId: async () => kase({ lane: "INCOMING" }),
+      listStaleInLane: async (lane: string) => (lane === "INCOMING" ? [kase({ lane: "INCOMING" })] : []),
+    } as unknown as CaseRepository;
+    const add = vi.fn(async () => undefined);
+    const removeDeduplicationKey = vi.fn(async () => undefined);
+
+    const { stop } = startReconcileSweep(attempts, cases, { add, removeDeduplicationKey } as never, 10);
+    await new Promise((r) => setTimeout(r, 30));
+    stop();
+
+    const [, data] = add.mock.calls[0] as unknown[];
+    expect((data as { caseId: string; reclaim?: boolean }).caseId).toBe("c1");
+    expect((data as { reclaim?: boolean }).reclaim).toBeUndefined();
   });
 });
