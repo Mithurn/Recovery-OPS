@@ -19,6 +19,11 @@ export function startReconcileSweep(
       await enqueueRecovery(queue, caseId, { force: true });
     }
 
+    const neverStarted = await cases.listStaleInLane("INCOMING", new Date(Date.now() - intervalMs));
+    for (const kase of neverStarted) {
+      await enqueueRecovery(queue, kase.id);
+    }
+
     const staleDiagnosing = await cases.listStaleInLane("DIAGNOSING", new Date(Date.now() - intervalMs));
     for (const kase of staleDiagnosing) {
       await enqueueRecovery(queue, kase.id, { reclaim: true });
