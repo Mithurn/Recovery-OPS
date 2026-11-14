@@ -16,6 +16,7 @@ export type AuthRouteDeps = {
   publicUrl: string;
   secureCookies: boolean;
   codeRequestsPerHour: number;
+  verifyPerIpLimit?: number;
 };
 
 const HOUR_MS = 60 * 60_000;
@@ -29,7 +30,7 @@ const keysBody = z.object({
 
 export async function registerAuthRoutes(app: FastifyInstance, deps: AuthRouteDeps): Promise<void> {
   const limiter = new FixedWindowLimiter(deps.codeRequestsPerHour, HOUR_MS);
-  const verifyByIp = new FixedWindowLimiter(VERIFY_PER_IP_LIMIT, VERIFY_WINDOW_MS);
+  const verifyByIp = new FixedWindowLimiter(deps.verifyPerIpLimit ?? VERIFY_PER_IP_LIMIT, VERIFY_WINDOW_MS);
   const verifyByEmail = new FixedWindowLimiter(VERIFY_PER_EMAIL_LIMIT, VERIFY_WINDOW_MS);
   const guard = { onRequest: requireUser(deps.auth) };
 
