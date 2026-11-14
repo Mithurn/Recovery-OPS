@@ -4,6 +4,7 @@ import { clientIp, redactWebhookToken } from "../src/api/limits.js";
 import { runReadiness } from "../src/api/health.js";
 import { createShutdown } from "../src/api/shutdown.js";
 import { createBudget } from "../src/agent/budget.js";
+import type { SpendSnapshot, SpendStore } from "../src/persistence/spend-repository.js";
 import { TenantRuntimes, type TenantRuntimeDeps } from "../src/tenants/runtime.js";
 
 describe("FixedWindowLimiter", () => {
@@ -105,5 +106,58 @@ describe("TenantRuntimes budget", () => {
     expect(second).not.toBe(first);
     expect(second.budget.usdUsed).toBe(0.5);
     expect(createBudget(1).usdUsed).toBe(0);
+  });
+
+  it("loads persisted spend, meters into it, and flushes it back", async () => {
+    const creds = { userId: "u2", keyId: "rzp_test_x", keySecret: "s", webhookSecret: "w", webhookToken: "t" };
+    const saved = new Map<string, SpendSnapshot>([
+      ["u2", { usdUsed: 0.4, calls: 3, inputTokens: 100, outputTokens: 50, callsWithoutUsage: 1 }],
+    ]);
+    const store: SpendStore = {
+      load: async (id) => saved.get(id) ?? null,
+      save: async (id, snapshot) => void saved.set(id, snapshot),
+    };
+    const runtimes = new TenantRuntimes({
+      credentials: { forUser: async () => creds },
+      baseModel: {},
+      modelId: "m",
+      agent: { stepBudget: 1, deadlineMs: 1 },
+      redis: {},
+      budget: { capUsd: 1, usdPerMInput: 1, usdPerMOutput: 1 },
+      spend: { store },
+    } as unknown as TenantRuntimeDeps);
+
+    const { budget } = (await runtimes.forUser("u2"))!;
+    expect(budget).toMatchObject({ usdUsed: 0.4, calls: 3, callsWithoutUsage: 1 });
+
+    budget.calls += 1;
+    budget.onChange?.();
+    await runtimes.flushSpend();
+    expect(saved.get("u2")?.calls).toBe(4);
+  });
+
+  it("fails closed when persisted spend cannot be loaded, then recovers", async () => {
+    const creds = { userId: "u3", keyId: "rzp_test_x", keySecret: "s", webhookSecret: "w", webhookToken: "t" };
+    let failing = true;
+    const store: SpendStore = {
+      load: async () => {
+        if (failing) throw new Error("db down");
+        return null;
+      },
+      save: async () => undefined,
+    };
+    const runtimes = new TenantRuntimes({
+      credentials: { forUser: async () => creds },
+      baseModel: {},
+      modelId: "m",
+      agent: { stepBudget: 1, deadlineMs: 1 },
+      redis: {},
+      budget: { capUsd: 1, usdPerMInput: 1, usdPerMOutput: 1 },
+      spend: { store },
+    } as unknown as TenantRuntimeDeps);
+
+    await expect(runtimes.forUser("u3")).rejects.toThrow("db down");
+    failing = false;
+    await expect(runtimes.forUser("u3")).resolves.not.toBeNull();
   });
 });

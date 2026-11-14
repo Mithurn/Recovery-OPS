@@ -39,6 +39,7 @@ export class PostgresCaseRepository implements CaseRepository {
          (id, run_id, merchant_ref, customer_ref, original_payment_id, amount_paise, currency,
           failure_code, failure_reason, failed_at, method, instrument, customer_history, ground_truth)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       ON CONFLICT (original_payment_id) WHERE original_payment_id IS NOT NULL DO NOTHING
        RETURNING ${COLUMNS}`,
       [
         newCase.id,
@@ -57,7 +58,10 @@ export class PostgresCaseRepository implements CaseRepository {
         newCase.groundTruth ? JSON.stringify(newCase.groundTruth) : null,
       ],
     );
-    return toCase(rows[0] as Row);
+    if (rows.length) return toCase(rows[0] as Row);
+    const existing = newCase.originalPaymentId ? await this.byOriginalPaymentId(newCase.originalPaymentId) : null;
+    if (!existing) throw new Error(`case insert for ${newCase.id} conflicted but no existing case was found`);
+    return existing;
   }
 
   async byId(id: string): Promise<RecoveryCase | null> {

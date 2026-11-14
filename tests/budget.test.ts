@@ -176,4 +176,15 @@ describe("model budget metering", () => {
     expect((model as unknown as { modelId: string }).modelId).toBe("test-model");
     expect((model as unknown as { specificationVersion: string }).specificationVersion).toBe("v4");
   });
+
+  it("notifies onChange on admission and after settlement", async () => {
+    const budget = createBudget(10, pricing);
+    const seen: number[] = [];
+    budget.onChange = () => seen.push(budget.usdUsed);
+    const model = guardModel(fakeModel({ generate: { usage: { inputTokens: 1_000_000, outputTokens: 0 } } }), budget);
+
+    await (model as unknown as { doGenerate: () => Promise<unknown> }).doGenerate();
+
+    expect(seen).toEqual([0, 1.5]);
+  });
 });

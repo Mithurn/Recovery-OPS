@@ -42,6 +42,20 @@ CREATE TABLE IF NOT EXISTS recovery_cases (
 CREATE INDEX IF NOT EXISTS idx_cases_run  ON recovery_cases (run_id);
 CREATE INDEX IF NOT EXISTS idx_cases_lane ON recovery_cases (lane);
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM recovery_cases WHERE original_payment_id IS NOT NULL
+    GROUP BY original_payment_id HAVING count(*) > 1
+  ) THEN
+    RAISE NOTICE 'idx_cases_original_payment not created: duplicate original_payment_id rows exist, resolve them manually then re-run';
+  ELSE
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_cases_original_payment ON recovery_cases (original_payment_id)
+      WHERE original_payment_id IS NOT NULL;
+  END IF;
+END
+$$;
+
 ALTER TABLE recovery_cases DROP CONSTRAINT IF EXISTS recovery_cases_lane_check;
 ALTER TABLE recovery_cases ADD  CONSTRAINT recovery_cases_lane_check CHECK (lane IN (
   'INCOMING','DIAGNOSING','DECIDING','ATTEMPTING',
@@ -143,3 +157,15 @@ CREATE TABLE IF NOT EXISTS tenant_credentials (
 );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON users, otp_codes, sessions, tenant_credentials TO recovery_app;
+
+CREATE TABLE IF NOT EXISTS user_spend (
+  user_id            UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  usd_used           DOUBLE PRECISION NOT NULL DEFAULT 0,
+  calls              BIGINT      NOT NULL DEFAULT 0,
+  input_tokens       BIGINT      NOT NULL DEFAULT 0,
+  output_tokens      BIGINT      NOT NULL DEFAULT 0,
+  calls_without_usage BIGINT     NOT NULL DEFAULT 0,
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE ON user_spend TO recovery_app;
